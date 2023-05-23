@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useDispatch } from 'react-redux';
-import { successLoginAction, failLoginAction } from './actions/login';
+import { successLoginAction } from './actions/login';
 import axios from 'axios'
 axios.defaults.withCredentials = true
 
@@ -34,8 +34,6 @@ const Register = () => {
                 // THIS IS AN ERROR FROM THE BACKEND
                 alert(error.response.data.error)
             }
-
-            dispatch(failLoginAction())
         })
     }
 

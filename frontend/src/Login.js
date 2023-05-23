@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { successLoginAction, failLoginAction } from './actions/login';
-import { useNavigate  } from 'react-router-dom';
+import { successLoginAction } from './actions/login';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios'
 axios.defaults.withCredentials = true
 
@@ -9,7 +9,6 @@ const Login = () => {
     const navigate = useNavigate();
     const isAuthenticated = useSelector((state) => state.isAuthenticated);
     const dispatch = useDispatch();
-
     const [loginUsername, setLoginUsername] = useState('')
     const [loginPassword, setLoginPassword] = useState('')
 
@@ -34,8 +33,6 @@ const Login = () => {
                 // THIS IS AN ERROR FROM THE BACKEND
                 alert(error.response.data.error)
             }
-
-            dispatch(failLoginAction())
         })
     }
 

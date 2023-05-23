@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { successLoginAction, failLoginAction } from './actions/login';
+import { failLoginAction } from './actions/login';
 import { useNavigate } from 'react-router-dom'
 import axios from 'axios'
 axios.defaults.withCredentials = true
@@ -16,7 +16,6 @@ const Home = () => {
         .then((response) => {
             if(response.status === 200 && response.data.status === 'ok') {
                 console.log(response)
-                dispatch(successLoginAction());
             }
         })
         .catch((error) => {
@@ -57,8 +56,9 @@ const Home = () => {
                 // THIS IS AN ERROR FROM THE BACKEND
                 alert(error.response.data.error);
             }
-            
-            dispatch(successLoginAction())
+
+            dispatch(failLoginAction());
+            navigate('/login')
         })
     }
 
