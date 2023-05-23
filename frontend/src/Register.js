@@ -30,12 +30,12 @@ const Register = () => {
             if(error.response.status === 400 && error.response.data.status === 'fail') {
                 // USER MUST COMPLETE THE REGISTRATION FORM
                 alert(error.response.data.error)
-                dispatch(failLoginAction())
             }else if(error.response.status === 500 && error.response.data.status === 'error') {
                 // THIS IS AN ERROR FROM THE BACKEND
                 alert(error.response.data.error)
-                dispatch(failLoginAction())
             }
+
+            dispatch(failLoginAction())
         })
     }
 

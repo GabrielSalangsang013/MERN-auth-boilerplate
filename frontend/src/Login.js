@@ -30,12 +30,12 @@ const Login = () => {
             if(error.response.status === 401 && error.response.data.status === 'fail') {
                 // INVALID INPUT LOGIN FORM
                 alert(error.response.data.error)
-                dispatch(failLoginAction())
             }else if(error.response.status === 500 && error.response.data.status === 'error') {
                 // THIS IS AN ERROR FROM THE BACKEND
                 alert(error.response.data.error)
-                dispatch(failLoginAction())
             }
+
+            dispatch(failLoginAction())
         })
     }
 
