@@ -12,7 +12,8 @@ const userSchema = new Schema({
   },
   profile: [{
     type: Schema.Types.ObjectId,
-    ref: 'Profile'
+    ref: 'Profile',
+    required: true
   }]
 }, { timestamps: true })
 

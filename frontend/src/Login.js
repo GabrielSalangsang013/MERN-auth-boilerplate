@@ -40,7 +40,7 @@ const Login = () => {
         <>
             <h2>Login Form</h2>
             <input type='text' placeholder='Enter username' onChange={e => setLoginUsername(e.target.value)} />
-            <input type='text' placeholder='Enter password' onChange={e => setLoginPassword(e.target.value)} />
+            <input type='password' placeholder='Enter password' onChange={e => setLoginPassword(e.target.value)} />
             <button type='submit' onClick={handleLogin}>Login</button>
             {isAuthenticated ? <h3>You are logged in</h3> : <h3>You are not logged in</h3>}
         </>

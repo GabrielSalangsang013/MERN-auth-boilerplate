@@ -3,6 +3,8 @@ const User = require('../models/userModel')
 const Profile = require('../models/profileModel')
 const argon2 = require('argon2')
 const jwt = require('jsonwebtoken')
+const Joi = require('joi');
+const { escape } = require('he');
 
 const user = async (req, res) => {    
     try {
@@ -21,7 +23,8 @@ const user = async (req, res) => {
 
 const register = async (req, res) => {
     try {
-        const {username, password, fullName} = req.body
+        // STEP 1. CHECK IF ALL FIELDS ARE NOT EMPTY
+        const {username, password, repeatPassword, fullName} = req.body
 
         let emptyFields = []
 
@@ -33,6 +36,10 @@ const register = async (req, res) => {
             emptyFields.push('password')
         }
 
+        if(!repeatPassword) {
+            emptyFields.push('repeatPassword')
+        }
+
         if(!fullName) {
             emptyFields.push('fullName')
         }
@@ -40,7 +47,110 @@ const register = async (req, res) => {
         if(emptyFields.length > 0) {
             return res.status(400).json({status: 'fail', error: 'Please complete the Registration Form', emptyFields})
         }
+        // END CHECK IF ALL FIELDS ARE NOT EMPTY
 
+        // STEP 2. VALIDATE USER INPUT
+        const validationSchema = Joi.object({
+            username: Joi.string()
+                .required()
+                .min(4)
+                .max(20)
+                .pattern(/^[a-zA-Z0-9_]+$/)
+                .messages({
+                    'string.base': 'Username must be a string',
+                    'string.empty': 'Username must not be empty',
+                    'string.min': 'Username must be at least 4 characters',
+                    'string.max': 'Username must not exceed 20 characters',
+                    'string.pattern.base': 'Username can only contain letters, numbers, and underscores',
+                    'any.required': 'Username is required',
+                })
+                .custom((value, helpers) => {
+                    const forbiddenUsernames = ['admin', 'root', 'superuser'];
+                    if (forbiddenUsernames.includes(value.toLowerCase())) {
+                        return helpers.error('any.invalid');
+                    }
+                    return value;
+                })
+                .custom((value, helpers) => {
+                    const sanitizedValue = escape(value);
+                    if (sanitizedValue !== value) {
+                      return helpers.error('any.invalid');
+                    }
+                    return value;
+                })
+                .messages({
+                    'any.invalid': 'Username should not contain sensitive information or invalid characters',
+                }),
+            password: Joi.string()
+                .required()
+                .min(12)
+                .pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]+$/)
+                .messages({
+                    'string.base': 'Password must be a string',
+                    'string.empty': 'Password must not be empty',
+                    'string.min': 'Password must be at least 12 characters',
+                    'string.pattern.base':
+                        'Password must contain at least one uppercase letter, one lowercase letter, one digit, and one special character',
+                    'any.required': 'Password is required',
+                })
+                .custom((value, helpers) => {
+                    const forbiddenPasswords = ['password', '123456789'];
+                    if (forbiddenPasswords.includes(value.toLowerCase())) {
+                        return helpers.error('any.invalid');
+                    }
+                    return value;
+                })
+                .messages({
+                    'any.invalid': 'Password should not be commonly used or easily guessable',
+                }),
+            repeatPassword: Joi.string()
+                .valid(Joi.ref('password'))
+                .required()
+                .messages({
+                    'any.only': 'Passwords must match',
+                    'any.required': 'Please repeat your password',
+                }),
+            fullName: Joi.string()
+                .required()
+                .max(50)
+                .pattern(/^[a-zA-Z\s]+$/)
+                .custom((value, helpers) => {
+                    const sanitizedValue = escape(value);
+                    if (sanitizedValue !== value) {
+                      return helpers.error('any.invalid');
+                    }
+                    return value;
+                })
+                .messages({
+                    'string.base': 'Full Name must be a string',
+                    'string.empty': 'Full Name must not be empty',
+                    'string.max': 'Full Name must not exceed 50 characters',
+                    'string.pattern.base': 'Full Name must contain letters only',
+                    'any.invalid': 'Full Name contains potentially unsafe characters or invalid characters',
+                    'any.required': 'Full Name is required',
+                }),
+        });
+
+        const { error } = validationSchema.validate(req.body);
+
+        if (error) {
+            return res.status(400).json({ status: 'fail', error: error.details[0].message });
+        }
+        // END VALIDATE USER INPUT
+        
+        // STEP 3. CHECK IF USERNAME IS EXIST
+        try {
+            const user = await User.findOne({ username });
+
+            if (user) {
+                return res.status(400).json({ status: 'fail', error: 'Username already exists.' });
+            }
+        }catch(e) {
+            return res.status(500).json({status: 'error', error: 'There is something problem on the server where an error occurred while checking the username. Please try again later.'})
+        }
+        // END CHECK IF USERNAME IS EXIST
+
+        // STEP 4. CREATE PROFILE AND USER ACCOUNT, SAVE TO THE DATABASE, AND SEND A JWT TOKEN
         let profileObj = new Profile({
             fullName: fullName,
             profilePicture: 'https://scontent.fmnl33-2.fna.fbcdn.net/v/t39.30808-6/308857489_125773400264403_7264189266841144710_n.jpg?_nc_cat=104&ccb=1-7&_nc_sid=09cbfe&_nc_eui2=AeFJ4HeZznWkLIm2zixWKb7IAVHx3QoqCnYBUfHdCioKdvwKAQ-8M7VdIUrDhpVz6WFBmhR3NvkmTFjvdJJHLeKY&_nc_ohc=KkGaPRvGXmgAX-6ACpy&_nc_ht=scontent.fmnl33-2.fna&oh=00_AfBVyrakCauKmhPkkQSTk-X28AJSjelNmVnfQlgZpJd2zw&oe=646FC2A0' 
@@ -115,6 +225,8 @@ const register = async (req, res) => {
                 });
                 return res.status(500).json({status: 'error', error: 'There is something problem on the server in creating a profile. Please try again later.'})
             });
+        // END CREATE PROFILE AND USER ACCOUNT THEN SAVE TO THE DATABASE
+    
     }catch(error) {
         console.log({
             fileName: 'v1AuthenticationController.js',
