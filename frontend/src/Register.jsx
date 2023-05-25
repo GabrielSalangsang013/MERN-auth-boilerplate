@@ -4,6 +4,7 @@ import { successLoginAction } from './actions/login';
 import { Formik, Form, Field, ErrorMessage } from 'formik';
 import { escape } from 'he';
 import * as Yup from 'yup';
+import DOMPurify from 'dompurify';  // FOR SANITIZING USER INPUT TO PREVENT XSS ATTACKS BEFORE SENDING TO THE BACKEND
 import axios from 'axios'
 axios.defaults.withCredentials = true
 
@@ -67,7 +68,23 @@ const Register = () => {
     });
 
     const handleSubmit = (values) => {
-        axios.post('http://localhost:4000/api/v1/authentication/register', values)
+        // STEP 1: GET ALL THE INPUT VALUES THAT HAS BEEN SUCCESSFULLY PASSED TO VALIDATION
+        const {username, password, repeatPassword, fullName} = values;
+
+        // STEP 2: SANITIZE THE USER INPUT TO PREVENT XSS ATTACK
+        let sanitizedInputUsername = DOMPurify.sanitize(username);
+        let sanitizedInputPassword = DOMPurify.sanitize(password);
+        let sanitizedInputRepeatPassword = DOMPurify.sanitize(repeatPassword);
+        let sanitizedInputFullName = DOMPurify.sanitize(fullName);
+        // END SANITIZE THE USER INPUT TO PREVENT XSS ATTACK
+
+        // STEP 3: SEND THE SANITIZED INPUT TO THE BACKEND FOR THE REGISTRATION OF THE ACCOUNT PURPOSES
+        axios.post('http://localhost:4000/api/v1/authentication/register', {
+            username: sanitizedInputUsername,
+            password: sanitizedInputPassword,
+            repeatPassword: sanitizedInputRepeatPassword,
+            fullName: sanitizedInputFullName
+        })
         .then((response) => {
            if(response.status === 200 && response.data.status === 'ok') {
                 alert('Successfully registered')
@@ -84,6 +101,7 @@ const Register = () => {
                 alert(error.response.data.error)
             }
         })
+        // END SEND THE SANITIZED INPUT TO THE BACKEND FOR THE REGISTRATION OF THE ACCOUNT PURPOSES
     };
 
     return (

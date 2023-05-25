@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { successLoginAction } from './actions/login';
 import { useNavigate } from 'react-router-dom';
+import DOMPurify from 'dompurify';  // FOR SANITIZING USER INPUT TO PREVENT XSS ATTACKS BEFORE SENDING TO THE BACKEND
 import axios from 'axios'
 axios.defaults.withCredentials = true
 
@@ -14,9 +15,12 @@ const Login = () => {
 
     function handleLogin(e) {
         e.preventDefault()
+        const sanitizedLoginUsername = DOMPurify.sanitize(loginUsername)
+        const sanitizedLoginPassword = DOMPurify.sanitize(loginPassword)
+
         axios.post('http://localhost:4000/api/v1/authentication/login', {
-            username: loginUsername,
-            password: loginPassword
+            username: sanitizedLoginUsername,
+            password: sanitizedLoginPassword
         })
         .then((response) => {
             if(response.status === 200 && response.data.status === 'ok') {

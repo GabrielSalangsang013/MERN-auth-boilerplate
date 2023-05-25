@@ -5,6 +5,7 @@ const argon2 = require('argon2')
 const jwt = require('jsonwebtoken')
 const Joi = require('joi');
 const { escape } = require('he');
+const xss = require('xss');
 
 const user = async (req, res) => {    
     try {
@@ -23,8 +24,8 @@ const user = async (req, res) => {
 
 const register = async (req, res) => {
     try {
-        // STEP 1. CHECK IF ALL FIELDS ARE NOT EMPTY
-        const {username, password, repeatPassword, fullName} = req.body
+        // STEP 1: CHECK IF ALL FIELDS ARE NOT EMPTY
+        let {username, password, repeatPassword, fullName} = req.body
 
         let emptyFields = []
 
@@ -49,7 +50,14 @@ const register = async (req, res) => {
         }
         // END CHECK IF ALL FIELDS ARE NOT EMPTY
 
-        // STEP 2. VALIDATE USER INPUT
+        // STEP 2: SANITIZE THE USER INPUT TO PREVENT XSS ATTACK
+        username = xss(username);
+        password = xss(password);
+        repeatPassword = xss(repeatPassword);
+        fullName = xss(fullName);
+        // END SANITIZE THE USER INPUT TO PREVENT XSS ATTACK
+
+        // STEP 3: VALIDATE USER INPUT
         const validationSchema = Joi.object({
             username: Joi.string()
                 .required()
@@ -137,8 +145,8 @@ const register = async (req, res) => {
             return res.status(400).json({ status: 'fail', error: error.details[0].message });
         }
         // END VALIDATE USER INPUT
-        
-        // STEP 3. CHECK IF USERNAME IS EXIST
+
+        // STEP 4: CHECK IF USERNAME IS EXIST
         try {
             const user = await User.findOne({ username });
 
@@ -150,7 +158,7 @@ const register = async (req, res) => {
         }
         // END CHECK IF USERNAME IS EXIST
 
-        // STEP 4. CREATE PROFILE AND USER ACCOUNT, SAVE TO THE DATABASE, AND SEND A JWT TOKEN
+        // STEP 5: CREATE PROFILE AND USER ACCOUNT, SAVE TO THE DATABASE, AND SEND A JWT TOKEN. NOTE! MONGOOSE MODEL WILL ALSO SANITIZE ALL THE USER INPUT AGAIN TO PREVENT NOSQL INJECTION ATTACK
         let profileObj = new Profile({
             fullName: fullName,
             profilePicture: 'https://scontent.fmnl33-2.fna.fbcdn.net/v/t39.30808-6/308857489_125773400264403_7264189266841144710_n.jpg?_nc_cat=104&ccb=1-7&_nc_sid=09cbfe&_nc_eui2=AeFJ4HeZznWkLIm2zixWKb7IAVHx3QoqCnYBUfHdCioKdvwKAQ-8M7VdIUrDhpVz6WFBmhR3NvkmTFjvdJJHLeKY&_nc_ohc=KkGaPRvGXmgAX-6ACpy&_nc_ht=scontent.fmnl33-2.fna&oh=00_AfBVyrakCauKmhPkkQSTk-X28AJSjelNmVnfQlgZpJd2zw&oe=646FC2A0' 
