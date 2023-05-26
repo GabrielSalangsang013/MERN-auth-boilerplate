@@ -164,7 +164,7 @@ const register = async (req, res) => {
         // STEP 5: CREATE PROFILE AND USER ACCOUNT, SAVE TO THE DATABASE, AND SEND A JWT TOKEN. NOTE! MONGOOSE MODEL WILL ALSO SANITIZE ALL THE USER INPUT AGAIN TO PREVENT NOSQL INJECTION ATTACK
         let profileObj = new Profile({
             fullName: fullName,
-            profilePicture: 'https://scontent.fmnl33-2.fna.fbcdn.net/v/t39.30808-6/308857489_125773400264403_7264189266841144710_n.jpg?_nc_cat=104&ccb=1-7&_nc_sid=09cbfe&_nc_eui2=AeFJ4HeZznWkLIm2zixWKb7IAVHx3QoqCnYBUfHdCioKdvwKAQ-8M7VdIUrDhpVz6WFBmhR3NvkmTFjvdJJHLeKY&_nc_ohc=KkGaPRvGXmgAX-6ACpy&_nc_ht=scontent.fmnl33-2.fna&oh=00_AfBVyrakCauKmhPkkQSTk-X28AJSjelNmVnfQlgZpJd2zw&oe=646FC2A0' 
+            profilePicture: 'https://res.cloudinary.com/dgo6vnzjl/image/upload/c_fill,q_50,w_150/v1685085963/default_male_avatar_xkpekq.webp' 
         })
 
         profileObj.save()
