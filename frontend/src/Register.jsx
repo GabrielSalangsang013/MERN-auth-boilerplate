@@ -31,7 +31,7 @@ const Register = () => {
                 (value) => !/\b(admin|root|superuser)\b/i.test(value)
             )
             .test(
-                'username-sql-injection and username-xss',
+                'username-xss',
                 'Invalid characters detected',
                 (value) => {
                     const sanitizedValue = escape(value);
@@ -58,7 +58,7 @@ const Register = () => {
             .max(50, 'Full Name must not exceed 50 characters')
             .matches(/^[a-zA-Z\s]+$/, 'Full Name must contain letters only')
             .test(
-              'full-name-security-full-name-sql-injection-and-full-name-xss',
+              'full-name-xss',
               'Full Name contains potentially unsafe characters or invalid characters',
               (value) => {
                 const sanitizedValue = escape(value);
@@ -72,18 +72,18 @@ const Register = () => {
         const {username, password, repeatPassword, fullName} = values;
 
         // STEP 2: SANITIZE THE USER INPUT TO PREVENT XSS ATTACK
-        let sanitizedInputUsername = DOMPurify.sanitize(username);
-        let sanitizedInputPassword = DOMPurify.sanitize(password);
-        let sanitizedInputRepeatPassword = DOMPurify.sanitize(repeatPassword);
-        let sanitizedInputFullName = DOMPurify.sanitize(fullName);
+        let sanitizedRegisterUsername = DOMPurify.sanitize(username);
+        let sanitizedRegisterPassword = DOMPurify.sanitize(password);
+        let sanitizedRegisterRepeatPassword = DOMPurify.sanitize(repeatPassword);
+        let sanitizedRegisterFullName = DOMPurify.sanitize(fullName);
         // END SANITIZE THE USER INPUT TO PREVENT XSS ATTACK
 
         // STEP 3: SEND THE SANITIZED INPUT TO THE BACKEND FOR THE REGISTRATION OF THE ACCOUNT PURPOSES
         axios.post('http://localhost:4000/api/v1/authentication/register', {
-            username: sanitizedInputUsername,
-            password: sanitizedInputPassword,
-            repeatPassword: sanitizedInputRepeatPassword,
-            fullName: sanitizedInputFullName
+            username: sanitizedRegisterUsername,
+            password: sanitizedRegisterPassword,
+            repeatPassword: sanitizedRegisterRepeatPassword,
+            fullName: sanitizedRegisterFullName
         })
         .then((response) => {
            if(response.status === 200 && response.data.status === 'ok') {

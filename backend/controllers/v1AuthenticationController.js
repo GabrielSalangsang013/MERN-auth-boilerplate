@@ -5,7 +5,8 @@ const argon2 = require('argon2')
 const jwt = require('jsonwebtoken')
 const Joi = require('joi');
 const { escape } = require('he');
-const xss = require('xss');
+const xss = require('xss'); // FOR XSS PROTECTION IN REGISTER AND LOGIN PURPOSES
+const mongoSanitize = require('express-mongo-sanitize'); // FOR NOSQL INJECTION PROTECTION IN REGISTER AND LOGIN PURPOSES
 const JWT_ACCESS_TOKEN_EXPIRATION_STRING = '60s'; // 60 SECONDS FOR JWT 
 const COOKIE_ACCESS_TOKEN_EXPIRATION = 60 * 1000; // 60 SECONDS FOR COOKIE JWT TOKEN
 
@@ -26,8 +27,8 @@ const user = async (req, res) => {
 
 const register = async (req, res) => {
     try {
-        // STEP 1: CHECK IF ALL FIELDS ARE NOT EMPTY
-        let {username, password, repeatPassword, fullName} = req.body
+        // STEP 1: SANITIZE THE USER INPUT TO PREVENT NOSQL INJECTION ATTACK AND CHECK IF ALL FIELDS ARE NOT EMPTY
+        let {username, password, repeatPassword, fullName} = mongoSanitize.sanitize(req.body);
 
         let emptyFields = []
 
@@ -50,7 +51,7 @@ const register = async (req, res) => {
         if(emptyFields.length > 0) {
             return res.status(400).json({status: 'fail', error: 'Please complete the Registration Form', emptyFields})
         }
-        // END CHECK IF ALL FIELDS ARE NOT EMPTY
+        // END SANITIZE THE USER INPUT TO PREVENT NOSQL INJECTION ATTACK AND CHECK IF ALL FIELDS ARE NOT EMPTY
 
         // STEP 2: SANITIZE THE USER INPUT TO PREVENT XSS ATTACK
         username = xss(username);
@@ -251,8 +252,8 @@ const register = async (req, res) => {
 
 const login = async (req, res) => {
     try {
-        // STEP 1: CHECK IF ALL FIELDS ARE NOT EMPTY
-        let {username, password} = req.body
+        // STEP 1: SANITIZE THE USER INPUT TO PREVENT NOSQL INJECTION ATTACK AND CHECK IF ALL FIELDS ARE NOT EMPTY
+        let {username, password} = mongoSanitize.sanitize(req.body);
 
         let emptyFields = []
 
@@ -267,7 +268,7 @@ const login = async (req, res) => {
         if(emptyFields.length > 0) {
             return res.status(400).json({status: 'fail', error: 'Please complete the Login Form', emptyFields})
         }
-        // END CHECK IF ALL FIELDS ARE NOT EMPTY
+        // END SANITIZE THE USER INPUT TO PREVENT NOSQL INJECTION ATTACK AND CHECK IF ALL FIELDS ARE NOT EMPTY
 
         // STEP 2: SANITIZE THE USER INPUT TO PREVENT XSS ATTACK
         username = xss(username);

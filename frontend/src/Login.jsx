@@ -29,7 +29,7 @@ const Login = () => {
                 (value) => !/\b(admin|root|superuser)\b/i.test(value)
             )
             .test(
-                'username-sql-injection and username-xss',
+                'username-xss',
                 'Invalid characters detected',
                 (value) => {
                     const sanitizedValue = escape(value);
