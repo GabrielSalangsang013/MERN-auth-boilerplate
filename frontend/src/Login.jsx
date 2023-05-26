@@ -74,10 +74,13 @@ const Login = () => {
         })
         .catch(function (error) {
             if(error.response.status === 400 && error.response.data.status === 'fail') {
-                // USER MUST COMPLETE THE LOGIN FORM REQUIREMENTS
+                // USER MUST COMPLETE THE LOGIN FORM FIELDS 
+                // MUST PASSED IN THE VALIDATION IN THE BACKEND
                 alert(error.response.data.error)
             }else if(error.response.status === 401 && error.response.data.status === 'fail') {
-                // INVALID INPUT LOGIN FORM
+                // INVALID INPUT LOGIN FORM MEANS THAT USERNAME OR PASSWORD IS INCORRECT
+                // THE USERNAME MUST EXIST
+                // THE PASSWORD MUST BE MATCH THAT STORED IN THE BACKEND
                 alert(error.response.data.error)
             }else if(error.response.status === 500 && error.response.data.status === 'error') {
                 // THIS IS AN ERROR FROM THE BACKEND

@@ -94,7 +94,9 @@ const Register = () => {
         })
         .catch(function (error) {
             if(error.response.status === 400 && error.response.data.status === 'fail') {
-                // USER MUST COMPLETE THE REGISTRATION FORM REQUIREMENTS OR USERNAME IS ALREADY EXIST
+                // USER MUST COMPLETE THE REGISTER FORM FIELDS 
+                // MUST PASSED IN THE VALIDATION IN THE BACKEND 
+                // THE USERNAME MUST NOT EXIST OR MUST BE UNIQUE
                 alert(error.response.data.error)
             }else if(error.response.status === 500 && error.response.data.status === 'error') {
                 // THIS IS AN ERROR FROM THE BACKEND
