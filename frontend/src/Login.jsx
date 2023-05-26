@@ -73,7 +73,10 @@ const Login = () => {
             } 
         })
         .catch(function (error) {
-            if(error.response.status === 401 && error.response.data.status === 'fail') {
+            if(error.response.status === 400 && error.response.data.status === 'fail') {
+                // USER MUST COMPLETE THE LOGIN FORM REQUIREMENTS
+                alert(error.response.data.error)
+            }else if(error.response.status === 401 && error.response.data.status === 'fail') {
                 // INVALID INPUT LOGIN FORM
                 alert(error.response.data.error)
             }else if(error.response.status === 500 && error.response.data.status === 'error') {
@@ -88,18 +91,19 @@ const Login = () => {
         <Formik initialValues={initialValues} validationSchema={validationSchema} onSubmit={handleSubmit}>
             <Form>
                 <h1>Login Form</h1>
+
                 <div>
                     <label htmlFor="username">Username: </label>
                     <Field type="text" id="username" name="username" />
                     <ErrorMessage name="username" component="div" />
                 </div>
-                
+
                 <div>
                     <label htmlFor="password">Password: </label>
                     <Field type="password" id="password" name="password" />
                     <ErrorMessage name="password" component="div" />
                 </div>
-
+                
                 <br/>
                 <button type="submit">Login</button>
             </Form>

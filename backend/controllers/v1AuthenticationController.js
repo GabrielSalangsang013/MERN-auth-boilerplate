@@ -6,6 +6,8 @@ const jwt = require('jsonwebtoken')
 const Joi = require('joi');
 const { escape } = require('he');
 const xss = require('xss');
+const JWT_ACCESS_TOKEN_EXPIRATION_STRING = '60s'; // 60 SECONDS FOR JWT 
+const COOKIE_ACCESS_TOKEN_EXPIRATION = 60 * 1000; // 60 SECONDS FOR COOKIE JWT TOKEN
 
 const user = async (req, res) => {    
     try {
@@ -189,13 +191,13 @@ const register = async (req, res) => {
                                 .populate('profile') // Populate the 'profile' field with the referenced profile documents
                                 .exec()
                                 .then(foundUser => {
-                                    let accessToken = jwt.sign(foundUser.toJSON(), process.env.ACCESS_TOKEN_SECRET, {expiresIn: '60s'})
+                                    let accessToken = jwt.sign(foundUser.toJSON(), process.env.ACCESS_TOKEN_SECRET, {expiresIn: JWT_ACCESS_TOKEN_EXPIRATION_STRING})
                                     res.cookie('access_token', accessToken, { 
                                         httpOnly: true, 
                                         secure: true, 
                                         sameSite: 'none', 
                                         path: '/', 
-                                        expires: new Date(new Date().getTime() + 60 * 1000)
+                                        expires: new Date(new Date().getTime() + COOKIE_ACCESS_TOKEN_EXPIRATION)
                                     })
                                     return res.status(200).json({status: 'ok'})
                                 })
@@ -249,28 +251,121 @@ const register = async (req, res) => {
 
 const login = async (req, res) => {
     try {
-        const { username, password } = req.body;
+        // STEP 1: CHECK IF ALL FIELDS ARE NOT EMPTY
+        let {username, password} = req.body
+
+        let emptyFields = []
+
+        if(!username) {
+            emptyFields.push('username')
+        }
+
+        if(!password) {
+            emptyFields.push('password')
+        }
+
+        if(emptyFields.length > 0) {
+            return res.status(400).json({status: 'fail', error: 'Please complete the Login Form', emptyFields})
+        }
+        // END CHECK IF ALL FIELDS ARE NOT EMPTY
+
+        // STEP 2: SANITIZE THE USER INPUT TO PREVENT XSS ATTACK
+        username = xss(username);
+        password = xss(password);
+        // END SANITIZE THE USER INPUT TO PREVENT XSS ATTACK
+
+        // STEP 3: VALIDATE USER INPUT
+        const validationSchema = Joi.object({
+            username: Joi.string()
+                .required()
+                .min(4)
+                .max(20)
+                .pattern(/^[a-zA-Z0-9_]+$/)
+                .messages({
+                    'string.base': 'Username must be a string',
+                    'string.empty': 'Username must not be empty',
+                    'string.min': 'Username must be at least 4 characters',
+                    'string.max': 'Username must not exceed 20 characters',
+                    'string.pattern.base': 'Username can only contain letters, numbers, and underscores',
+                    'any.required': 'Username is required',
+                })
+                .custom((value, helpers) => {
+                    const forbiddenUsernames = ['admin', 'root', 'superuser'];
+                    if (forbiddenUsernames.includes(value.toLowerCase())) {
+                        return helpers.error('any.invalid');
+                    }
+                    return value;
+                })
+                .custom((value, helpers) => {
+                    const sanitizedValue = escape(value);
+                    if (sanitizedValue !== value) {
+                      return helpers.error('any.invalid');
+                    }
+                    return value;
+                })
+                .messages({
+                    'any.invalid': 'Username should not contain sensitive information or invalid characters',
+                }),
+            password: Joi.string()
+                .required()
+                .min(12)
+                .pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]+$/)
+                .messages({
+                    'string.base': 'Password must be a string',
+                    'string.empty': 'Password must not be empty',
+                    'string.min': 'Password must be at least 12 characters',
+                    'string.pattern.base':
+                        'Password must contain at least one uppercase letter, one lowercase letter, one digit, and one special character',
+                    'any.required': 'Password is required',
+                })
+                .custom((value, helpers) => {
+                    const forbiddenPasswords = ['password', '123456789'];
+                    if (forbiddenPasswords.includes(value.toLowerCase())) {
+                        return helpers.error('any.invalid');
+                    }
+                    return value;
+                })
+                .messages({
+                    'any.invalid': 'Password should not be commonly used or easily guessable',
+                })
+        });
+
+        const { error } = validationSchema.validate(req.body);
+
+        if (error) {
+            return res.status(400).json({ status: 'fail', error: error.details[0].message });
+        }
+        // END VALIDATE USER INPUT
+
+        // STEP 4: CHECK IF USERNAME IS EXIST - THE USERNAME MUST EXIST TO BE SUCCESSFULLY LOGIN
         const user = await User.findOne({ username }).populate('profile'); // return object only
         
         if (!user) {
             return res.status(401).json({status: 'fail', error: 'Invalid username or password' });
         }
-        
+        // END CHECK IF USERNAME IS EXIST - THE USERNAME MUST EXIST TO BE SUCCESSFULLY LOGIN
+
+        // STEP 5: CHECK IF PASSWORD IS MATCH - THE PASSWORD MUST BE MATCH TO BE SUCCESSFULLY LOGIN
         const passwordMatch = await argon2.verify(user.password, password);
         
         if (!passwordMatch) {
             return res.status(401).json({status: 'fail', error: 'Invalid username or password' });
         }
+        // END CHECK IF PASSWORD IS MATCH - THE PASSWORD MUST BE MATCH TO BE SUCCESSFULLY LOGIN
 
-        let accessToken = jwt.sign(user.toJSON(), process.env.ACCESS_TOKEN_SECRET, {expiresIn: '60s'})
+        // STEP 6: GRANT ACCESS THE USER AND GIVE JWT TOKEN TO THE USER
+        let accessToken = jwt.sign(user.toJSON(), process.env.ACCESS_TOKEN_SECRET, {expiresIn: JWT_ACCESS_TOKEN_EXPIRATION_STRING})
+        
         res.cookie('access_token', accessToken, { 
             httpOnly: true, 
             secure: true, 
             sameSite: 'none', 
             path: '/', 
-            expires: new Date(new Date().getTime() + 60 * 1000)
+            expires: new Date(new Date().getTime() + COOKIE_ACCESS_TOKEN_EXPIRATION)
         })
+        
         return res.status(200).json({status: 'ok', user: user})
+        // END GRANT ACCESS THE USER AND GIVE JWT TOKEN TO THE USER
     }catch(error) {
         console.log({
             fileName: 'v1AuthenticationController.js',
