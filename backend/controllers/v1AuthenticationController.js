@@ -357,7 +357,8 @@ const login = async (req, res) => {
         // END CHECK IF PASSWORD IS MATCH - THE PASSWORD MUST BE MATCH TO BE SUCCESSFULLY LOGIN
 
         // STEP 6: GRANT ACCESS THE USER AND GIVE JWT TOKEN TO THE USER
-        // DELETE PASSWORD OF THE USER BEFORE STORING JWT SIGN
+
+        // DELETE PASSWORD OF THE USER FIRST BEFORE JWT SIGN
         user.password = undefined;
 
         let accessToken = jwt.sign(user.toJSON(), process.env.ACCESS_TOKEN_SECRET, {expiresIn: JWT_ACCESS_TOKEN_EXPIRATION_STRING});
