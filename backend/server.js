@@ -29,10 +29,10 @@ mongoose.connect(databaseConfig.uri, {
 })
 .then(() => {
     app.listen(PORT, () => {
-        console.log(`File: server.js - Listening on ${PORT}`)
-})
+        console.log(`File: server.js - Listening on ${PORT}`);
+    });
 })
 .catch((err) => {
-    console.log(`File: server.js - ${err}`)
-    mongoose.disconnect()
+    console.log(`File: server.js - ${err}`);
+    mongoose.disconnect();
 });

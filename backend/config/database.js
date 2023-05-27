@@ -1,4 +1,4 @@
-require('dotenv').config()
+require('dotenv').config();
 let databaseConfig;
 
 if (process.env.NODE_ENV === 'PRODUCTION') {

@@ -5,8 +5,8 @@ import { Formik, Form, Field, ErrorMessage } from 'formik';
 import { escape } from 'he';
 import * as Yup from 'yup';
 import DOMPurify from 'dompurify';  // FOR SANITIZING USER INPUT TO PREVENT XSS ATTACKS BEFORE SENDING TO THE BACKEND
-import axios from 'axios'
-axios.defaults.withCredentials = true
+import axios from 'axios';
+axios.defaults.withCredentials = true;
 
 const Login = () => {
     const navigate = useNavigate();
@@ -56,8 +56,8 @@ const Login = () => {
         // END GET ALL THE INPUT VALUES THAT HAS BEEN SUCCESSFULLY PASSED TO VALIDATION
         
         // STEP 2: SANITIZE THE USER INPUT TO PREVENT XSS ATTACK
-        const sanitizedLoginUsername = DOMPurify.sanitize(username)
-        const sanitizedLoginPassword = DOMPurify.sanitize(password)
+        const sanitizedLoginUsername = DOMPurify.sanitize(username);
+        const sanitizedLoginPassword = DOMPurify.sanitize(password);
         // END SANITIZE THE USER INPUT TO PREVENT XSS ATTACK
 
         // STEP 3: SEND THE SANITIZED INPUT TO THE BACKEND FOR THE LOGIN PURPOSES
@@ -67,8 +67,8 @@ const Login = () => {
         })
         .then((response) => {
             if(response.status === 200 && response.data.status === 'ok') {
-                alert('Successfully logged in.')
-                dispatch(successLoginAction())
+                alert('Successfully logged in.');
+                dispatch(successLoginAction());
                 navigate('/');
             } 
         })
@@ -76,17 +76,17 @@ const Login = () => {
             if(error.response.status === 400 && error.response.data.status === 'fail') {
                 // USER MUST COMPLETE THE LOGIN FORM FIELDS 
                 // MUST PASSED IN THE VALIDATION IN THE BACKEND
-                alert(error.response.data.error)
+                alert(error.response.data.error);
             }else if(error.response.status === 401 && error.response.data.status === 'fail') {
                 // INVALID INPUT LOGIN FORM MEANS THAT USERNAME OR PASSWORD IS INCORRECT
                 // THE USERNAME MUST EXIST
                 // THE PASSWORD MUST BE MATCH THAT STORED IN THE BACKEND
-                alert(error.response.data.error)
+                alert(error.response.data.error);
             }else if(error.response.status === 500 && error.response.data.status === 'error') {
                 // THIS IS AN ERROR FROM THE BACKEND
-                alert(error.response.data.error)
+                alert(error.response.data.error);
             }
-        })
+        });
         // END SEND THE SANITIZED INPUT TO THE BACKEND FOR THE LOGIN PURPOSES
     }
 

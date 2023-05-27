@@ -1,16 +1,16 @@
-import { useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { successLoginAction } from './actions/login';
 import { Formik, Form, Field, ErrorMessage } from 'formik';
 import { escape } from 'he';
 import * as Yup from 'yup';
 import DOMPurify from 'dompurify';  // FOR SANITIZING USER INPUT TO PREVENT XSS ATTACKS BEFORE SENDING TO THE BACKEND
-import axios from 'axios'
-axios.defaults.withCredentials = true
+import axios from 'axios';
+axios.defaults.withCredentials = true;
 
 const Register = () => {
-    const navigate = useNavigate()
-    const dispatch = useDispatch()
+    const navigate = useNavigate();
+    const dispatch = useDispatch();
 
     const initialValues = {
         username: '',
@@ -87,7 +87,7 @@ const Register = () => {
         })
         .then((response) => {
            if(response.status === 200 && response.data.status === 'ok') {
-                alert('Successfully registered')
+                alert('Successfully registered');
                 dispatch(successLoginAction());
                 navigate('/');
            }
@@ -97,10 +97,10 @@ const Register = () => {
                 // USER MUST COMPLETE THE REGISTER FORM FIELDS 
                 // MUST PASSED IN THE VALIDATION IN THE BACKEND 
                 // THE USERNAME MUST NOT EXIST OR MUST BE UNIQUE
-                alert(error.response.data.error)
+                alert(error.response.data.error);
             }else if(error.response.status === 500 && error.response.data.status === 'error') {
                 // THIS IS AN ERROR FROM THE BACKEND
-                alert(error.response.data.error)
+                alert(error.response.data.error);
             }
         })
         // END SEND THE SANITIZED INPUT TO THE BACKEND FOR THE REGISTRATION OF THE ACCOUNT PURPOSES

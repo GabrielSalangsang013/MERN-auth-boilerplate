@@ -1,8 +1,8 @@
-require('dotenv').config()
-const User = require('../models/userModel')
-const Profile = require('../models/profileModel')
-const argon2 = require('argon2')
-const jwt = require('jsonwebtoken')
+require('dotenv').config();
+const User = require('../models/userModel');
+const Profile = require('../models/profileModel');
+const argon2 = require('argon2');
+const jwt = require('jsonwebtoken');
 const Joi = require('joi');
 const { escape } = require('he');
 const xss = require('xss'); // FOR XSS PROTECTION IN REGISTER AND LOGIN PURPOSES
@@ -12,7 +12,7 @@ const COOKIE_ACCESS_TOKEN_EXPIRATION = 60 * 1000; // 60 SECONDS FOR COOKIE JWT T
 
 const user = async (req, res) => {    
     try {
-        return res.status(200).json({status: 'ok', user: req.user})
+        return res.status(200).json({status: 'ok', user: req.user});
     }catch(error) {
         console.log({
             fileName: 'v1AuthenticationController.js',
@@ -21,7 +21,7 @@ const user = async (req, res) => {
             error: error,
             statusCode: 500
         });
-        return res.status(500).json({status: 'error', error: 'There is something problem on the server. Please try again later.'})
+        return res.status(500).json({status: 'error', error: 'There is something problem on the server. Please try again later.'});
     }
 }
 
@@ -30,26 +30,26 @@ const register = async (req, res) => {
         // STEP 1: SANITIZE THE USER INPUT TO PREVENT NOSQL INJECTION ATTACK AND CHECK IF ALL FIELDS ARE NOT EMPTY
         let {username, password, repeatPassword, fullName} = mongoSanitize.sanitize(req.body);
 
-        let emptyFields = []
+        let emptyFields = [];
 
         if(!username) {
-            emptyFields.push('username')
+            emptyFields.push('username');
         }
 
         if(!password) {
-            emptyFields.push('password')
+            emptyFields.push('password');
         }
 
         if(!repeatPassword) {
-            emptyFields.push('repeatPassword')
+            emptyFields.push('repeatPassword');
         }
 
         if(!fullName) {
-            emptyFields.push('fullName')
+            emptyFields.push('fullName');
         }
 
         if(emptyFields.length > 0) {
-            return res.status(400).json({status: 'fail', error: 'Please complete the Registration Form', emptyFields})
+            return res.status(400).json({status: 'fail', error: 'Please complete the Registration Form', emptyFields});
         }
         // END SANITIZE THE USER INPUT TO PREVENT NOSQL INJECTION ATTACK AND CHECK IF ALL FIELDS ARE NOT EMPTY
 
@@ -157,7 +157,7 @@ const register = async (req, res) => {
                 return res.status(400).json({ status: 'fail', error: 'Username already exists.' });
             }
         }catch(e) {
-            return res.status(500).json({status: 'error', error: 'There is something problem on the server where an error occurred while checking the username. Please try again later.'})
+            return res.status(500).json({status: 'error', error: 'There is something problem on the server where an error occurred while checking the username. Please try again later.'});
         }
         // END CHECK IF USERNAME IS EXIST
 
@@ -165,16 +165,16 @@ const register = async (req, res) => {
         let profileObj = new Profile({
             fullName: fullName,
             profilePicture: 'https://res.cloudinary.com/dgo6vnzjl/image/upload/c_fill,q_50,w_150/v1685085963/default_male_avatar_xkpekq.webp' 
-        })
+        });
 
         profileObj.save()
             .then(async savedProfile => {
-                const hashedPassword = await argon2.hash(password)
+                const hashedPassword = await argon2.hash(password);
                 const user = new User({ 
                     username: username, 
                     password: hashedPassword,
                     profile: [savedProfile._id]
-                })
+                });
                 user.save()
                     .then(async savedUser => {
                         Profile.findByIdAndUpdate(savedProfile._id, { user_id: savedUser._id }, (error, docs) => {
@@ -186,21 +186,23 @@ const register = async (req, res) => {
                                     error: error,
                                     statusCode: 500
                                 });
-                                return res.status(500).json({status: 'error', error: 'There is something problem on the server in searching profile. Please try again later.'})
+                                return res.status(500).json({status: 'error', error: 'There is something problem on the server in searching profile. Please try again later.'});
                             }else{
                                 User.findById(savedUser._id) // return object only
                                 .populate('profile') // Populate the 'profile' field with the referenced profile documents
                                 .exec()
                                 .then(foundUser => {
-                                    let accessToken = jwt.sign(foundUser.toJSON(), process.env.ACCESS_TOKEN_SECRET, {expiresIn: JWT_ACCESS_TOKEN_EXPIRATION_STRING})
+                                    // DELETE PASSWORD OF THE USER BEFORE STORING JWT SIGN
+                                    foundUser.password = undefined;
+                                    let accessToken = jwt.sign(foundUser.toJSON(), process.env.ACCESS_TOKEN_SECRET, {expiresIn: JWT_ACCESS_TOKEN_EXPIRATION_STRING});
                                     res.cookie('access_token', accessToken, { 
                                         httpOnly: true, 
                                         secure: true, 
                                         sameSite: 'none', 
                                         path: '/', 
                                         expires: new Date(new Date().getTime() + COOKIE_ACCESS_TOKEN_EXPIRATION)
-                                    })
-                                    return res.status(200).json({status: 'ok'})
+                                    });
+                                    return res.status(200).json({status: 'ok'});
                                 })
                                 .catch(error => {
                                     console.log({
@@ -210,7 +212,7 @@ const register = async (req, res) => {
                                         error: error,
                                         statusCode: 500
                                     });
-                                    return res.status(500).json({status: 'error', error: 'There is something problem on the server in searching user. Please try again later.'})
+                                    return res.status(500).json({status: 'error', error: 'There is something problem on the server in searching user. Please try again later.'});
                                 });
                             }
                         });
@@ -223,7 +225,7 @@ const register = async (req, res) => {
                             error: error,
                             statusCode: 500
                         });
-                        return res.status(500).json({status: 'error', error: 'There is something problem on the server in creating a user. Please try again later.'})
+                        return res.status(500).json({status: 'error', error: 'There is something problem on the server in creating a user. Please try again later.'});
                     });
             })
             .catch(error => {
@@ -234,7 +236,7 @@ const register = async (req, res) => {
                     error: error,
                     statusCode: 500
                 });
-                return res.status(500).json({status: 'error', error: 'There is something problem on the server in creating a profile. Please try again later.'})
+                return res.status(500).json({status: 'error', error: 'There is something problem on the server in creating a profile. Please try again later.'});
             });
         // END CREATE PROFILE AND USER ACCOUNT THEN SAVE TO THE DATABASE
     
@@ -246,7 +248,7 @@ const register = async (req, res) => {
             error: error,
             statusCode: 500
         });
-        return res.status(500).json({status: 'error', error: 'There is something problem on the server. Please try again later.'})
+        return res.status(500).json({status: 'error', error: 'There is something problem on the server. Please try again later.'});
     }
 }
 
@@ -255,18 +257,18 @@ const login = async (req, res) => {
         // STEP 1: SANITIZE THE USER INPUT TO PREVENT NOSQL INJECTION ATTACK AND CHECK IF ALL FIELDS ARE NOT EMPTY
         let {username, password} = mongoSanitize.sanitize(req.body);
 
-        let emptyFields = []
+        let emptyFields = [];
 
         if(!username) {
-            emptyFields.push('username')
+            emptyFields.push('username');
         }
 
         if(!password) {
-            emptyFields.push('password')
+            emptyFields.push('password');
         }
 
         if(emptyFields.length > 0) {
-            return res.status(400).json({status: 'fail', error: 'Please complete the Login Form', emptyFields})
+            return res.status(400).json({status: 'fail', error: 'Please complete the Login Form', emptyFields});
         }
         // END SANITIZE THE USER INPUT TO PREVENT NOSQL INJECTION ATTACK AND CHECK IF ALL FIELDS ARE NOT EMPTY
 
@@ -355,7 +357,10 @@ const login = async (req, res) => {
         // END CHECK IF PASSWORD IS MATCH - THE PASSWORD MUST BE MATCH TO BE SUCCESSFULLY LOGIN
 
         // STEP 6: GRANT ACCESS THE USER AND GIVE JWT TOKEN TO THE USER
-        let accessToken = jwt.sign(user.toJSON(), process.env.ACCESS_TOKEN_SECRET, {expiresIn: JWT_ACCESS_TOKEN_EXPIRATION_STRING})
+        // DELETE PASSWORD OF THE USER BEFORE STORING JWT SIGN
+        user.password = undefined;
+
+        let accessToken = jwt.sign(user.toJSON(), process.env.ACCESS_TOKEN_SECRET, {expiresIn: JWT_ACCESS_TOKEN_EXPIRATION_STRING});
         
         res.cookie('access_token', accessToken, { 
             httpOnly: true, 
@@ -363,9 +368,9 @@ const login = async (req, res) => {
             sameSite: 'none', 
             path: '/', 
             expires: new Date(new Date().getTime() + COOKIE_ACCESS_TOKEN_EXPIRATION)
-        })
-        
-        return res.status(200).json({status: 'ok', user: user})
+        });
+
+        return res.status(200).json({status: 'ok', user: user});
         // END GRANT ACCESS THE USER AND GIVE JWT TOKEN TO THE USER
     }catch(error) {
         console.log({
@@ -375,7 +380,8 @@ const login = async (req, res) => {
             error: error,
             statusCode: 500
         });
-        return res.status(500).json({status: 'error', error: 'There is something problem on the server. Please try again later.'})
+
+        return res.status(500).json({status: 'error', error: 'There is something problem on the server. Please try again later.'});
     }
 }
 
@@ -387,8 +393,9 @@ const logout = async (req, res) => {
             sameSite: 'none', 
             path: '/', 
             expires: new Date(Date.now() + 10000)
-        })
-        return res.status(200).json({status: 'ok'})
+        });
+
+        return res.status(200).json({status: 'ok'});
     }catch(error) {
         console.log({
             fileName: 'v1AuthenticationController.js',
@@ -397,7 +404,8 @@ const logout = async (req, res) => {
             error: error,
             statusCode: 500
         });
-        return res.status(500).json({status: 'error', error: 'There is something problem on the server. Please try again later.'})
+
+        return res.status(500).json({status: 'error', error: 'There is something problem on the server. Please try again later.'});
     }
 }
 
@@ -406,4 +414,4 @@ module.exports = {
     register,
     login,
     logout
-}
+};
