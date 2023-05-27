@@ -20,6 +20,7 @@ const Login = () => {
     const validationSchema = Yup.object().shape({
         username: Yup.string()
             .required('Username is required')
+            .trim()
             .min(4, 'Username must be at least 4 characters')
             .max(20, 'Username must not exceed 20 characters')
             .matches(/^[a-zA-Z0-9_]+$/, 'Username can only contain letters, numbers, and underscores')
@@ -29,7 +30,7 @@ const Login = () => {
                 (value) => !/\b(admin|root|superuser)\b/i.test(value)
             )
             .test(
-                'username-xss',
+                'username-xss-nosql',
                 'Invalid characters detected',
                 (value) => {
                     const sanitizedValue = escape(value);

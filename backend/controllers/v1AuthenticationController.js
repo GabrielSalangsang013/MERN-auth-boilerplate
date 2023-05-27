@@ -28,12 +28,16 @@ const user = async (req, res) => {
 const register = async (req, res) => {
     try {
         // STEP 1: SANITIZE THE USER INPUT TO PREVENT NOSQL INJECTION ATTACK AND CHECK IF ALL FIELDS ARE NOT EMPTY
-        let {username, password, repeatPassword, fullName} = mongoSanitize.sanitize(req.body);
+        let {username, email, password, repeatPassword, fullName} = mongoSanitize.sanitize(req.body);
 
         let emptyFields = [];
 
         if(!username) {
             emptyFields.push('username');
+        }
+
+        if(!email) {
+            emptyFields.push('email');
         }
 
         if(!password) {
@@ -55,6 +59,7 @@ const register = async (req, res) => {
 
         // STEP 2: SANITIZE THE USER INPUT TO PREVENT XSS ATTACK
         username = xss(username);
+        email = xss(email);
         password = xss(password);
         repeatPassword = xss(repeatPassword);
         fullName = xss(fullName);
@@ -64,82 +69,100 @@ const register = async (req, res) => {
         const validationSchema = Joi.object({
             username: Joi.string()
                 .required()
+                .trim()
                 .min(4)
                 .max(20)
                 .pattern(/^[a-zA-Z0-9_]+$/)
-                .messages({
-                    'string.base': 'Username must be a string',
-                    'string.empty': 'Username must not be empty',
-                    'string.min': 'Username must be at least 4 characters',
-                    'string.max': 'Username must not exceed 20 characters',
-                    'string.pattern.base': 'Username can only contain letters, numbers, and underscores',
-                    'any.required': 'Username is required',
-                })
                 .custom((value, helpers) => {
-                    const forbiddenUsernames = ['admin', 'root', 'superuser'];
-                    if (forbiddenUsernames.includes(value.toLowerCase())) {
-                        return helpers.error('any.invalid');
+                    if (/\b(admin|root|superuser)\b/i.test(value)) {
+                        return helpers.error('username-security');
                     }
                     return value;
                 })
                 .custom((value, helpers) => {
                     const sanitizedValue = escape(value);
                     if (sanitizedValue !== value) {
-                      return helpers.error('any.invalid');
+                        return helpers.error('username-xss-nosql');
                     }
                     return value;
                 })
                 .messages({
-                    'any.invalid': 'Username should not contain sensitive information or invalid characters',
+                    'string.base': 'Username must be a string',
+                    'string.empty': 'Username is required',
+                    'string.min': 'Username must be at least 4 characters',
+                    'string.max': 'Username must not exceed 20 characters',
+                    'string.pattern.base': 'Username can only contain letters, numbers, and underscores',
+                    'any.required': 'Username is required',
+                    'username-security': 'Username should not contain sensitive information',
+                    'username-xss-nosql': 'Invalid characters detected',
+                }),
+            email: Joi.string()
+                .required()
+                .trim()
+                .pattern(/^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/)
+                .email({ minDomainSegments: 2, tlds: { allow: false } })
+                .custom((value, helpers) => {
+                    const sanitizedValue = escape(value);
+                    if (sanitizedValue !== value) {
+                      return helpers.error('email-xss-nosql');
+                    }
+                    return value;
+                })
+                .messages({
+                    'string.base': 'Email must be a string',
+                    'string.empty': 'Email is required',
+                    'string.pattern.base': 'Please enter a valid email address',
+                    'string.email': 'Please enter a valid email address',
+                    'any.required': 'Email is required',
+                    'email-xss-nosql': 'Invalid email format or potentially unsafe characters',
                 }),
             password: Joi.string()
                 .required()
                 .min(12)
                 .pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]+$/)
-                .messages({
-                    'string.base': 'Password must be a string',
-                    'string.empty': 'Password must not be empty',
-                    'string.min': 'Password must be at least 12 characters',
-                    'string.pattern.base':
-                        'Password must contain at least one uppercase letter, one lowercase letter, one digit, and one special character',
-                    'any.required': 'Password is required',
-                })
                 .custom((value, helpers) => {
-                    const forbiddenPasswords = ['password', '123456789'];
-                    if (forbiddenPasswords.includes(value.toLowerCase())) {
-                        return helpers.error('any.invalid');
+                    if (/\b(password|123456789)\b/i.test(value)) {
+                        return helpers.error('password-security');
                     }
                     return value;
                 })
                 .messages({
-                    'any.invalid': 'Password should not be commonly used or easily guessable',
+                    'string.base': 'Password must be a string',
+                    'string.empty': 'Password is required',
+                    'string.min': 'Password must be at least 12 characters',
+                    'string.pattern.base': 'Password must contain at least one uppercase letter, one lowercase letter, one digit, and one special character',
+                    'any.required': 'Password is required',
+                    'password-security': 'Password should not be commonly used or easily guessable',
                 }),
             repeatPassword: Joi.string()
-                .valid(Joi.ref('password'))
                 .required()
+                .valid(Joi.ref('password'))
                 .messages({
+                    'string.base': 'Repeat Password must be a string',
+                    'string.empty': 'Please repeat your password',
                     'any.only': 'Passwords must match',
                     'any.required': 'Please repeat your password',
                 }),
             fullName: Joi.string()
                 .required()
+                .trim()
                 .max(50)
-                .pattern(/^[a-zA-Z\s]+$/)
+                .regex(/^[a-zA-Z\s]+$/)
                 .custom((value, helpers) => {
                     const sanitizedValue = escape(value);
                     if (sanitizedValue !== value) {
-                      return helpers.error('any.invalid');
+                        return helpers.error('full-name-xss-nosql');
                     }
                     return value;
                 })
                 .messages({
                     'string.base': 'Full Name must be a string',
-                    'string.empty': 'Full Name must not be empty',
+                    'string.empty': 'Full Name is required',
                     'string.max': 'Full Name must not exceed 50 characters',
                     'string.pattern.base': 'Full Name must contain letters only',
-                    'any.invalid': 'Full Name contains potentially unsafe characters or invalid characters',
                     'any.required': 'Full Name is required',
-                }),
+                    'full-name-xss-nosql': 'Full Name contains potentially unsafe characters or invalid characters',
+                })
         });
 
         const { error } = validationSchema.validate(req.body);
@@ -169,12 +192,16 @@ const register = async (req, res) => {
 
         profileObj.save()
             .then(async savedProfile => {
-                const hashedPassword = await argon2.hash(password);
                 const user = new User({ 
                     username: username, 
-                    password: hashedPassword,
+                    email: email, 
+                    password: password,
                     profile: [savedProfile._id]
                 });
+                
+                // THE USER WILL BE SAVED. BEFORE SAVING TO THE DATABASE
+                // THE USER WILL UNDER GO FIRST TO THE USER MODEL MONGOOSE VALIDATION WHICH IS FINAL VALIDATION
+                // THEN HASH THE PASSWORD THEN SAVE TO THE DATABASE
                 user.save()
                     .then(async savedUser => {
                         Profile.findByIdAndUpdate(savedProfile._id, { user_id: savedUser._id }, (error, docs) => {
@@ -189,31 +216,31 @@ const register = async (req, res) => {
                                 return res.status(500).json({status: 'error', error: 'There is something problem on the server in searching profile. Please try again later.'});
                             }else{
                                 User.findById(savedUser._id) // return object only
-                                .populate('profile') // Populate the 'profile' field with the referenced profile documents
-                                .exec()
-                                .then(foundUser => {
-                                    // DELETE PASSWORD OF THE USER FIRST BEFORE JWT SIGN
-                                    foundUser.password = undefined;
-                                    let accessToken = jwt.sign(foundUser.toJSON(), process.env.ACCESS_TOKEN_SECRET, {expiresIn: JWT_ACCESS_TOKEN_EXPIRATION_STRING});
-                                    res.cookie('access_token', accessToken, { 
-                                        httpOnly: true, 
-                                        secure: true, 
-                                        sameSite: 'none', 
-                                        path: '/', 
-                                        expires: new Date(new Date().getTime() + COOKIE_ACCESS_TOKEN_EXPIRATION)
+                                    .populate('profile') // Populate the 'profile' field with the referenced profile documents
+                                    .exec()
+                                    .then(foundUser => {
+                                        // DELETE PASSWORD OF THE USER FIRST BEFORE JWT SIGN
+                                        foundUser.password = undefined;
+                                        let accessToken = jwt.sign(foundUser.toJSON(), process.env.ACCESS_TOKEN_SECRET, {expiresIn: JWT_ACCESS_TOKEN_EXPIRATION_STRING});
+                                        res.cookie('access_token', accessToken, { 
+                                            httpOnly: true, 
+                                            secure: true, 
+                                            sameSite: 'none', 
+                                            path: '/', 
+                                            expires: new Date(new Date().getTime() + COOKIE_ACCESS_TOKEN_EXPIRATION)
+                                        });
+                                        return res.status(200).json({status: 'ok'});
+                                    })
+                                    .catch(error => {
+                                        console.log({
+                                            fileName: 'v1AuthenticationController.js',
+                                            errorDescription: 'There is something problem on the server in searching user.',
+                                            errorLocation: 'register',
+                                            error: error,
+                                            statusCode: 500
+                                        });
+                                        return res.status(500).json({status: 'error', error: 'There is something problem on the server in searching user. Please try again later.'});
                                     });
-                                    return res.status(200).json({status: 'ok'});
-                                })
-                                .catch(error => {
-                                    console.log({
-                                        fileName: 'v1AuthenticationController.js',
-                                        errorDescription: 'There is something problem on the server in searching user.',
-                                        errorLocation: 'register',
-                                        error: error,
-                                        statusCode: 500
-                                    });
-                                    return res.status(500).json({status: 'error', error: 'There is something problem on the server in searching user. Please try again later.'});
-                                });
                             }
                         });
                     })
@@ -281,55 +308,50 @@ const login = async (req, res) => {
         const validationSchema = Joi.object({
             username: Joi.string()
                 .required()
+                .trim()
                 .min(4)
                 .max(20)
                 .pattern(/^[a-zA-Z0-9_]+$/)
-                .messages({
-                    'string.base': 'Username must be a string',
-                    'string.empty': 'Username must not be empty',
-                    'string.min': 'Username must be at least 4 characters',
-                    'string.max': 'Username must not exceed 20 characters',
-                    'string.pattern.base': 'Username can only contain letters, numbers, and underscores',
-                    'any.required': 'Username is required',
-                })
                 .custom((value, helpers) => {
-                    const forbiddenUsernames = ['admin', 'root', 'superuser'];
-                    if (forbiddenUsernames.includes(value.toLowerCase())) {
-                        return helpers.error('any.invalid');
+                    if (/\b(admin|root|superuser)\b/i.test(value)) {
+                        return helpers.error('username-security');
                     }
                     return value;
                 })
                 .custom((value, helpers) => {
                     const sanitizedValue = escape(value);
                     if (sanitizedValue !== value) {
-                      return helpers.error('any.invalid');
+                        return helpers.error('username-xss-nosql');
                     }
                     return value;
                 })
                 .messages({
-                    'any.invalid': 'Username should not contain sensitive information or invalid characters',
+                    'string.base': 'Username must be a string',
+                    'string.empty': 'Username is required',
+                    'string.min': 'Username must be at least 4 characters',
+                    'string.max': 'Username must not exceed 20 characters',
+                    'string.pattern.base': 'Username can only contain letters, numbers, and underscores',
+                    'any.required': 'Username is required',
+                    'username-security': 'Username should not contain sensitive information',
+                    'username-xss-nosql': 'Invalid characters detected',
                 }),
             password: Joi.string()
                 .required()
                 .min(12)
                 .pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]+$/)
-                .messages({
-                    'string.base': 'Password must be a string',
-                    'string.empty': 'Password must not be empty',
-                    'string.min': 'Password must be at least 12 characters',
-                    'string.pattern.base':
-                        'Password must contain at least one uppercase letter, one lowercase letter, one digit, and one special character',
-                    'any.required': 'Password is required',
-                })
                 .custom((value, helpers) => {
-                    const forbiddenPasswords = ['password', '123456789'];
-                    if (forbiddenPasswords.includes(value.toLowerCase())) {
-                        return helpers.error('any.invalid');
+                    if (/\b(password|123456789)\b/i.test(value)) {
+                        return helpers.error('password-security');
                     }
                     return value;
                 })
                 .messages({
-                    'any.invalid': 'Password should not be commonly used or easily guessable',
+                    'string.base': 'Password must be a string',
+                    'string.empty': 'Password is required',
+                    'string.min': 'Password must be at least 12 characters',
+                    'string.pattern.base': 'Password must contain at least one uppercase letter, one lowercase letter, one digit, and one special character',
+                    'any.required': 'Password is required',
+                    'password-security': 'Password should not be commonly used or easily guessable',
                 })
         });
 
