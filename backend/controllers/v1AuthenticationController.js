@@ -192,7 +192,7 @@ const register = async (req, res) => {
                                 .populate('profile') // Populate the 'profile' field with the referenced profile documents
                                 .exec()
                                 .then(foundUser => {
-                                    // DELETE PASSWORD OF THE USER BEFORE STORING JWT SIGN
+                                    // DELETE PASSWORD OF THE USER FIRST BEFORE JWT SIGN
                                     foundUser.password = undefined;
                                     let accessToken = jwt.sign(foundUser.toJSON(), process.env.ACCESS_TOKEN_SECRET, {expiresIn: JWT_ACCESS_TOKEN_EXPIRATION_STRING});
                                     res.cookie('access_token', accessToken, { 
