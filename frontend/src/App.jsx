@@ -6,6 +6,7 @@ import { successLoginAction, failLoginAction } from './actions/login';
 import Home from './Home';
 import Login from './Login';
 import Register from './Register';
+import Activate from './Activate';
 import axios from 'axios';
 
 function App() {
@@ -25,22 +26,25 @@ function App() {
       .catch((error) => {
         if(error.response.status === 401 && error.response.data.status === 'error') {
           // UNAUTHORIZED USER
-          alert(error.response.data.error);
+          // alert(error.response.data.error);
         }else if(error.response.status === 403  && error.response.data.status === 'error') {
           // FORBIDDEN OR INVALID TOKEN
-          alert(error.response.data.error);
+          // alert(error.response.data.error);
         }else if(error.response.status === 500 && error.response.data.status === 'error') {
           // THIS IS AN ERROR FROM THE BACKEND
-          alert(error.response.data.error);
+          // alert(error.response.data.error);
         }
 
-        if(!(window.location.href.indexOf('register') > -1)) {
+        if(window.location.href.indexOf('/users/activate')) {
+
+        }else if(!(window.location.href.indexOf('register') > -1)) {
           navigate('/login');
         }
 
         setIsAuthenticating(false);
         dispatch(failLoginAction());
       });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   if (isAuthenticating) {
@@ -56,6 +60,7 @@ function App() {
           <Route path='/' exact element={<Home />}/>
           <Route path='/login' exact element={<Login />}/>
           <Route path='/register' exact element={<Register />}/>
+          <Route path='/users/activate/:token' exact element={<Activate  />}/>
       </Routes>
     </div>
   )

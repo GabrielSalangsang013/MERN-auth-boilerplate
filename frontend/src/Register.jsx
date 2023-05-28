@@ -1,6 +1,4 @@
 import { useNavigate } from 'react-router-dom';
-import { useDispatch } from 'react-redux';
-import { successLoginAction } from './actions/login';
 import { Formik, Form, Field, ErrorMessage } from 'formik';
 import { escape } from 'he';
 import * as Yup from 'yup';
@@ -9,8 +7,7 @@ import axios from 'axios';
 axios.defaults.withCredentials = true;
 
 const Register = () => {
-    const navigate = useNavigate();
-    const dispatch = useDispatch();
+    const navigate = useNavigate()
 
     const initialValues = {
         username: '',
@@ -108,9 +105,8 @@ const Register = () => {
         })
         .then((response) => {
            if(response.status === 200 && response.data.status === 'ok') {
-                alert('Successfully registered');
-                dispatch(successLoginAction());
-                navigate('/');
+                alert('Email has been sent to activate your account');
+                navigate('/login');
            }
         })
         .catch(function (error) {
@@ -118,6 +114,7 @@ const Register = () => {
                 // USER MUST COMPLETE THE REGISTER FORM FIELDS 
                 // MUST PASSED IN THE VALIDATION IN THE BACKEND 
                 // THE USERNAME MUST NOT EXIST OR MUST BE UNIQUE
+                // THE EMAIL MUST NOT EXIST OR MUST BE UNIQUE
                 alert(error.response.data.error);
             }else if(error.response.status === 500 && error.response.data.status === 'error') {
                 // THIS IS AN ERROR FROM THE BACKEND

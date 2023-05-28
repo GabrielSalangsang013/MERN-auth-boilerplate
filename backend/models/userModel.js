@@ -3,7 +3,6 @@ const Schema = mongoose.Schema;
 const { escape } = require('he');
 const argon2 = require('argon2');
 
-// VALIDATE THE USER INPUT FIRST BASED ON THIS USER SCHEMA
 const userSchema = new Schema({
   username: {
     type: String,
@@ -72,10 +71,7 @@ const userSchema = new Schema({
   }
 }, { timestamps: true });
 
-
-// THIS WILL RUN SECOND AFTER THE VALIDATION WHEN CREATING THE USER
 userSchema.pre("save", async function (next) {
-  
   if (!this.isModified("password")) {
     return next();
   }
@@ -88,5 +84,10 @@ userSchema.pre("save", async function (next) {
     return next(error);
   }
 });
+
+userSchema.methods.matchPasswords = async function (password) {
+  return await argon2.verify(this.password, password);
+};
+
 
 module.exports = mongoose.model('User', userSchema);

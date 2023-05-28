@@ -37,6 +37,7 @@ function authenticateToken(req, res, next) {
 router.get('/user', authenticateToken, v1AuthenticationController.user); // USER MUST BE AUTHETICATED
 router.post('/register', v1AuthenticationController.register);
 router.post('/login', v1AuthenticationController.login);
+router.post('/activate', v1AuthenticationController.activate);
 router.post('/logout', authenticateToken, v1AuthenticationController.logout); // USER MUST BE AUTHETICATED
 
 module.exports = router
