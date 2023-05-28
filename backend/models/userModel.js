@@ -53,7 +53,7 @@ const userSchema = new Schema({
     required: [true, 'Password is required'],
     minlength: [12, 'Password must be at least 12 characters'],
     match: [
-      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]+$/,
+      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()\-_=+{};:,<.>]).+$/,
       'Password must contain at least one uppercase letter, one lowercase letter, one digit, and one special character',
     ],
     validate: [

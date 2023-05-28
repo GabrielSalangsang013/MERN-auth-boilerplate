@@ -119,7 +119,7 @@ const register = async (req, res) => {
             password: Joi.string()
                 .required()
                 .min(12)
-                .pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]+$/)
+                .pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()\-_=+{};:,<.>]).+$/)
                 .custom((value, helpers) => {
                     if (/\b(password|123456789)\b/i.test(value)) {
                         return helpers.error('password-security');
@@ -338,7 +338,7 @@ const login = async (req, res) => {
             password: Joi.string()
                 .required()
                 .min(12)
-                .pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]+$/)
+                .pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()\-_=+{};:,<.>]).+$/)
                 .custom((value, helpers) => {
                     if (/\b(password|123456789)\b/i.test(value)) {
                         return helpers.error('password-security');

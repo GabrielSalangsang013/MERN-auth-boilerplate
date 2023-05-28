@@ -41,7 +41,7 @@ const Login = () => {
             .required('Password is required')
             .min(12, 'Password must be at least 12 characters')
             .matches(
-                /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]+$/,
+                /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()\-_=+{};:,<.>]).+$/,
                 'Password must contain at least one uppercase letter, one lowercase letter, one digit, and one special character'
             )
             .test(
