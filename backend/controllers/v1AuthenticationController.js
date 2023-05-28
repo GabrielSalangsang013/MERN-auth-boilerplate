@@ -1,16 +1,14 @@
 require('dotenv').config();
 const User = require('../models/userModel');
 const Profile = require('../models/profileModel');
-const argon2 = require('argon2');
 const jwt = require('jsonwebtoken');
 const Joi = require('joi');
 const { escape } = require('he');
 const xss = require('xss'); // FOR XSS PROTECTION IN REGISTER AND LOGIN PURPOSES
 const mongoSanitize = require('express-mongo-sanitize'); // FOR NOSQL INJECTION PROTECTION IN REGISTER AND LOGIN PURPOSES
-const JWT_ACCESS_TOKEN_EXPIRATION_STRING = '60s'; // 60 SECONDS FOR JWT 
-const COOKIE_ACCESS_TOKEN_EXPIRATION = 60 * 1000; // 60 SECONDS FOR COOKIE JWT TOKEN
 const frontendConfig = require('../config/frontend');
 const sendEmail = require("../utils/sendEmail");
+const ACCESS_TOKEN_EXPIRATION = 60 * 1000;
 
 const user = async (req, res) => {    
     try {
@@ -445,13 +443,13 @@ const activate = async (req, res) => {
                                                 .populate('profile') // Populate the 'profile' field with the referenced profile documents
                                                 .exec()
                                                 .then(foundUser => {
-                                                    let accessToken = jwt.sign(foundUser.toJSON(), process.env.ACCESS_TOKEN_SECRET, {expiresIn: JWT_ACCESS_TOKEN_EXPIRATION_STRING});
+                                                    let accessToken = jwt.sign(foundUser.toJSON(), process.env.ACCESS_TOKEN_SECRET, {expiresIn: process.env.ACCESS_TOKEN_EXPIRATION_STRING});
                                                     res.cookie('access_token', accessToken, { 
                                                         httpOnly: true, 
                                                         secure: true, 
                                                         sameSite: 'none', 
                                                         path: '/', 
-                                                        expires: new Date(new Date().getTime() + COOKIE_ACCESS_TOKEN_EXPIRATION)
+                                                        expires: new Date(new Date().getTime() + ACCESS_TOKEN_EXPIRATION)
                                                     });
                                                     return res.status(200).json({status: 'ok'});
                                                 })
@@ -608,14 +606,14 @@ const login = async (req, res) => {
         // END CHECK IF PASSWORD IS MATCH - THE PASSWORD MUST BE MATCH TO BE SUCCESSFULLY LOGIN
 
         // STEP 6: GRANT ACCESS THE USER AND GIVE JWT TOKEN TO THE USER
-        let accessToken = jwt.sign(user.toJSON(), process.env.ACCESS_TOKEN_SECRET, {expiresIn: JWT_ACCESS_TOKEN_EXPIRATION_STRING});
+        let accessToken = jwt.sign(user.toJSON(), process.env.ACCESS_TOKEN_SECRET, {expiresIn: process.env.ACCESS_TOKEN_EXPIRATION_STRING});
         
         res.cookie('access_token', accessToken, { 
             httpOnly: true, 
             secure: true, 
             sameSite: 'none', 
             path: '/', 
-            expires: new Date(new Date().getTime() + COOKIE_ACCESS_TOKEN_EXPIRATION)
+            expires: new Date(new Date().getTime() + ACCESS_TOKEN_EXPIRATION)
         });
 
         return res.status(200).json({status: 'ok', user: user});
