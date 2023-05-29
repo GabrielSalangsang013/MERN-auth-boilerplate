@@ -7,7 +7,7 @@ const { escape } = require('he');
 const xss = require('xss'); // FOR XSS PROTECTION IN REGISTER AND LOGIN PURPOSES
 const mongoSanitize = require('express-mongo-sanitize'); // FOR NOSQL INJECTION PROTECTION IN REGISTER AND LOGIN PURPOSES
 const frontendConfig = require('../config/frontend');
-const sendEmail = require("../utils/sendEmail");
+const sendEmailActivationAccount = require("../utils/sendEmailActivationAccount");
 const ACCESS_TOKEN_EXPIRATION = 60 * 1000;
 
 const user = async (req, res) => {    
@@ -206,7 +206,7 @@ const register = async (req, res) => {
         `;
 
         try {
-            await sendEmail({
+            await sendEmailActivationAccount({
                 to: email,
                 subject: "MERN with Auth - Account Activation",
                 text: "Your account will be activated by clicking the link below",
