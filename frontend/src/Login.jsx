@@ -1,4 +1,5 @@
-import { useDispatch } from 'react-redux';
+import { useEffect } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
 import { successLoginAction } from './actions/login';
 import { useNavigate } from 'react-router-dom';
 import { Formik, Form, Field, ErrorMessage } from 'formik';
@@ -11,6 +12,7 @@ axios.defaults.withCredentials = true;
 const Login = () => {
     const navigate = useNavigate();
     const dispatch = useDispatch();
+    const isAuthenticated = useSelector((state) => state.isAuthenticated);
 
     const initialValues = {
         username: '',
@@ -90,6 +92,13 @@ const Login = () => {
         });
         // END SEND THE SANITIZED INPUT TO THE BACKEND FOR THE LOGIN PURPOSES
     }
+
+    useEffect(() => {
+        if(isAuthenticated) {
+            window.location.replace('/');
+        }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [])
 
     return (
         <Formik initialValues={initialValues} validationSchema={validationSchema} onSubmit={handleSubmit}>
