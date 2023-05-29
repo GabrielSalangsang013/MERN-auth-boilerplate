@@ -107,7 +107,6 @@ const Register = () => {
            if(response.status === 200 && response.data.status === 'ok') {
                 alert('Email has been sent to activate your account');
                 setIsUserActivationEmailSent(true);
-                // navigate('/login');
            }
         })
         .catch(function (error) {

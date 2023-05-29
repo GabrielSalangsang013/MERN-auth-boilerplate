@@ -198,7 +198,7 @@ const register = async (req, res) => {
 
         // STEP 6: SEND EMAIL TO THE USER TO ACTIVATE HIS OR HER ACCOUNT
         const ACCOUNT_ACTIVATION_TOKEN = jwt.sign({username, email, password, repeatPassword, fullName}, process.env.ACCOUNT_ACTIVATION_TOKEN_SECRET, {expiresIn: process.env.ACCOUNT_ACTIVATION_EXPIRES_IN_STRING});
-        const activateAccountURL = `${frontendConfig.uri}/user/activate/${ACCOUNT_ACTIVATION_TOKEN}`;
+        const activateAccountURL = `${frontendConfig.uri}/activate/${ACCOUNT_ACTIVATION_TOKEN}`;
         const html = `
             <h1>Your account will be activated by clicking the link below</h1>
             <hr />
@@ -492,7 +492,7 @@ const activate = async (req, res) => {
                 }
             })
         }else {
-            return res.status(401).json({status: 'error', error: 'Invalid token'});
+            return res.status(401).json({status: 'error', error: 'No token'});
         }
     }catch(error) {
         console.log({

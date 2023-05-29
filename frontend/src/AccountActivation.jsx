@@ -6,7 +6,7 @@ import { successLoginAction } from './actions/login';
 import axios from 'axios';
 axios.defaults.withCredentials = true;
 
-const Activate = () => {
+const AccountActivation = () => {
     const navigate = useNavigate();
     const { token } = useParams();
     const dispatch = useDispatch();
@@ -26,15 +26,19 @@ const Activate = () => {
                 }
             })
             .catch(function (error) {
-                if(error.response.status === 400 && error.response.data.status === 'error'){
+                if(error.response.status === 400 && error.response.data.status === 'fail') {
                     // USER MUST COMPLETE THE REGISTER FORM FIELDS 
                     // MUST PASSED IN THE VALIDATION IN THE BACKEND 
                     // THE USERNAME MUST NOT EXIST OR MUST BE UNIQUE
                     // THE EMAIL MUST NOT EXIST OR MUST BE UNIQUE
                     alert(error.response.data.error);
+                    navigate('/register');
+                }else if(error.response.status === 400 && error.response.data.status === 'error'){
+                    // MUST PASSED IN THE VALIDATION IN THE BACKEND 
+                    alert(error.response.data.error);
+                    navigate('/register');
                 }else if(error.response.status === 401 && error.response.data.status === 'error') {
                     // NO TOKEN
-                    alert(error.response.data.error);
                     navigate('/login');
                 }else if(error.response.status === 401 && error.response.data.status === 'fail') {
                     // EXPIRED LINK OR INVALID TOKEN
@@ -43,6 +47,7 @@ const Activate = () => {
                 }else if(error.response.status === 500 && error.response.data.status === 'error') {
                     // THIS IS AN ERROR FROM THE BACKEND
                     alert(error.response.data.error);
+                    navigate('/login');
                 }
             })
         }else {
@@ -61,10 +66,10 @@ const Activate = () => {
 
     return (
         <>
-            <h1>Activate Page</h1>
+            <h1>Account Activation Page</h1>
             <p>{token}</p>
         </>
     )
 }
 
-export default Activate;
+export default AccountActivation;
