@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Formik, Form, Field, ErrorMessage } from 'formik';
 import { escape } from 'he';
@@ -7,7 +8,8 @@ import axios from 'axios';
 axios.defaults.withCredentials = true;
 
 const Register = () => {
-    const navigate = useNavigate()
+    const navigate = useNavigate();
+    const [isUserActivationEmailSent, setIsUserActivationEmailSent] = useState(false);
 
     const initialValues = {
         username: '',
@@ -106,7 +108,8 @@ const Register = () => {
         .then((response) => {
            if(response.status === 200 && response.data.status === 'ok') {
                 alert('Email has been sent to activate your account');
-                navigate('/login');
+                setIsUserActivationEmailSent(true);
+                // navigate('/login');
            }
         })
         .catch(function (error) {
@@ -123,6 +126,14 @@ const Register = () => {
         })
         // END SEND THE SANITIZED INPUT TO THE BACKEND FOR THE REGISTRATION OF THE ACCOUNT PURPOSES
     };
+
+    if(isUserActivationEmailSent) { 
+        return (
+            <>
+                <h1>Your account activation link has been sent to your email.</h1>
+            </>
+        )
+    }
 
     return (
         <Formik initialValues={initialValues} validationSchema={validationSchema} onSubmit={handleSubmit}>

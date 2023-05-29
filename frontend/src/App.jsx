@@ -35,7 +35,7 @@ function App() {
           // alert(error.response.data.error);
         }
 
-        if(window.location.href.indexOf('/users/activate')) {
+        if(window.location.href.indexOf('/user/activate')) {
 
         }else if(!(window.location.href.indexOf('register') > -1)) {
           navigate('/login');
@@ -60,7 +60,8 @@ function App() {
           <Route path='/' exact element={<Home />}/>
           <Route path='/login' exact element={<Login />}/>
           <Route path='/register' exact element={<Register />}/>
-          <Route path='/users/activate/:token' exact element={<Activate  />}/>
+          <Route path='/user/activate/:token' exact element={<Activate  />}/>
+          {/* <Route path='/users/password/forget' exact element={<Activate  />}/> */}
       </Routes>
     </div>
   )

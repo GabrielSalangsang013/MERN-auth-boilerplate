@@ -198,7 +198,7 @@ const register = async (req, res) => {
 
         // STEP 6: SEND EMAIL TO THE USER TO ACTIVATE HIS OR HER ACCOUNT
         const ACCOUNT_ACTIVATION_TOKEN = jwt.sign({username, email, password, repeatPassword, fullName}, process.env.ACCOUNT_ACTIVATION_TOKEN_SECRET, {expiresIn: process.env.ACCOUNT_ACTIVATION_EXPIRES_IN_STRING});
-        const activateAccountURL = `${frontendConfig.uri}/users/activate/${ACCOUNT_ACTIVATION_TOKEN}`;
+        const activateAccountURL = `${frontendConfig.uri}/user/activate/${ACCOUNT_ACTIVATION_TOKEN}`;
         const html = `
             <h1>Your account will be activated by clicking the link below</h1>
             <hr />
@@ -443,6 +443,7 @@ const activate = async (req, res) => {
                                                 .populate('profile') // Populate the 'profile' field with the referenced profile documents
                                                 .exec()
                                                 .then(foundUser => {
+                                                    foundUser.password = undefined;
                                                     let accessToken = jwt.sign(foundUser.toJSON(), process.env.ACCESS_TOKEN_SECRET, {expiresIn: process.env.ACCESS_TOKEN_EXPIRATION_STRING});
                                                     res.cookie('access_token', accessToken, { 
                                                         httpOnly: true, 
@@ -606,6 +607,7 @@ const login = async (req, res) => {
         // END CHECK IF PASSWORD IS MATCH - THE PASSWORD MUST BE MATCH TO BE SUCCESSFULLY LOGIN
 
         // STEP 6: GRANT ACCESS THE USER AND GIVE JWT TOKEN TO THE USER
+        user.password = undefined;
         let accessToken = jwt.sign(user.toJSON(), process.env.ACCESS_TOKEN_SECRET, {expiresIn: process.env.ACCESS_TOKEN_EXPIRATION_STRING});
         
         res.cookie('access_token', accessToken, { 
