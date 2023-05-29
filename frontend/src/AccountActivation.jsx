@@ -33,10 +33,6 @@ const AccountActivation = () => {
                     // THE EMAIL MUST NOT EXIST OR MUST BE UNIQUE
                     alert(error.response.data.error);
                     navigate('/register');
-                }else if(error.response.status === 400 && error.response.data.status === 'error'){
-                    // MUST PASSED IN THE VALIDATION IN THE BACKEND 
-                    alert(error.response.data.error);
-                    navigate('/register');
                 }else if(error.response.status === 401 && error.response.data.status === 'error') {
                     // NO TOKEN
                     navigate('/login');
