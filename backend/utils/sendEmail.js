@@ -1,6 +1,6 @@
 const nodemailer = require("nodemailer");
 
-const sendEmailActivationAccount = async ({ to, subject, text, html }) => {
+const sendEmail = async ({ to, subject, text, html }) => {
   const transporter = nodemailer.createTransport({
     host: process.env.SMTP_HOST,
     port: process.env.SMTP_PORT,
@@ -23,7 +23,7 @@ const sendEmailActivationAccount = async ({ to, subject, text, html }) => {
   transporter.sendMail(emailOptions, (error, info) => {
     if (error) {
       console.log({
-        fileName: 'sendEmailActivationAccount.js',
+        fileName: 'sendEmail.js',
         errorDescription: 'There is something problem on the sending the activation link to the user via email.',
         errorLocation: 'sendEmailActivationAccount',
         error: error
@@ -32,4 +32,4 @@ const sendEmailActivationAccount = async ({ to, subject, text, html }) => {
   });
 };
 
-module.exports = sendEmailActivationAccount;
+module.exports = sendEmail;
