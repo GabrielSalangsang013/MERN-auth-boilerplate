@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { Formik, Form, Field, ErrorMessage } from 'formik';
 import { escape } from 'he';
 import * as Yup from 'yup';
@@ -8,7 +7,6 @@ import axios from 'axios';
 axios.defaults.withCredentials = true;
 
 const Register = () => {
-    const navigate = useNavigate();
     const [isUserActivationEmailSent, setIsUserActivationEmailSent] = useState(false);
 
     const initialValues = {
