@@ -38,6 +38,9 @@ router.get('/user', authenticateToken, v1AuthenticationController.user); // USER
 router.post('/register', v1AuthenticationController.register);
 router.post('/login', v1AuthenticationController.login);
 router.post('/activate', v1AuthenticationController.activate);
+router.post('/forgot-password', v1AuthenticationController.forgotPassword);
+router.post('/reset-password', v1AuthenticationController.resetPassword);
+router.post('/account-recovery/reset-password/verify-token', v1AuthenticationController.accountRecoveryResetPasswordVerifyToken);
 router.post('/logout', authenticateToken, v1AuthenticationController.logout); // USER MUST BE AUTHETICATED
 
 module.exports = router

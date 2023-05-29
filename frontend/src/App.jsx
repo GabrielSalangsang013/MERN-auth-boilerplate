@@ -8,6 +8,7 @@ import Login from './Login';
 import Register from './Register';
 import AccountActivation from './AccountActivation';
 import ForgotPassword from './ForgotPassword';
+import ResetPassword from './ResetPassword';
 import axios from 'axios';
 
 function App() {
@@ -65,6 +66,7 @@ function App() {
           <Route path='/register' exact element={<Register />}/>
           <Route path='/activate/:token' exact element={<AccountActivation  />}/>
           <Route path='/forgot-password' exact element={<ForgotPassword />}/>
+          <Route path='/reset-password/:token' exact element={<ResetPassword />}/>
       </Routes>
     </div>
   )

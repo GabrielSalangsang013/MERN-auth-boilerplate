@@ -118,6 +118,7 @@ const Register = () => {
                 alert(error.response.data.error);
             }else if(error.response.status === 500 && error.response.data.status === 'error') {
                 // THIS IS AN ERROR FROM THE BACKEND
+                // ERROR IN SENDING THE EMAIL ACCOUNT ACTIVATION
                 alert(error.response.data.error);
             }
         })
