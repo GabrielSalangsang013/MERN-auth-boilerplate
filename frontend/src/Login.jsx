@@ -93,12 +93,20 @@ const Login = () => {
         // END SEND THE SANITIZED INPUT TO THE BACKEND FOR THE LOGIN PURPOSES
     }
 
+    // IF USER IS ALREADY AUTHENTICATED. THE USER CANNOT NO LONGER VIEW THE LOGIN PAGE
     useEffect(() => {
         if(isAuthenticated) {
             window.location.replace('/');
         }
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
+
+    if(isAuthenticated) {
+        return (
+            <></>
+        )
+    }
+    // END IF USER IS ALREADY AUTHENTICATED. THE USER CANNOT NO LONGER VIEW THE LOGIN PAGE
 
     return (
         <Formik initialValues={initialValues} validationSchema={validationSchema} onSubmit={handleSubmit}>
