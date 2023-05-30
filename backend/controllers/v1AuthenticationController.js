@@ -180,7 +180,7 @@ const register = async (req, res) => {
             if (user) {
                 return res.status(400).json({ status: 'fail', error: 'Username already exist.' });
             }
-        }catch(e) {
+        }catch(error) {
             return res.status(500).json({status: 'error', error: 'There is something problem on the server where an error occurred while checking the username. Please try again later.'});
         }
         // END CHECK IF USERNAME IS EXIST
@@ -192,7 +192,7 @@ const register = async (req, res) => {
             if (user) {
                 return res.status(400).json({ status: 'fail', error: 'Email already exist.' });
             }
-        }catch(e) {
+        }catch(error) {
             return res.status(500).json({status: 'error', error: 'There is something problem on the server where an error occurred while checking the email. Please try again later.'});
         }
         // END CHECK IF EMAIL IS EXIST
@@ -401,7 +401,7 @@ const activate = async (req, res) => {
                         if (user) {
                             return res.status(400).json({ status: 'fail', error: 'Username already exist.' });
                         }
-                    }catch(e) {
+                    }catch(error) {
                         return res.status(500).json({status: 'error', error: 'There is something problem on the server where an error occurred while checking the username. Please try again later.'});
                     }
                     // END CHECK IF USERNAME IS EXIST
@@ -413,7 +413,7 @@ const activate = async (req, res) => {
                         if (user) {
                             return res.status(400).json({ status: 'fail', error: 'Email already exist.' });
                         }
-                    }catch(e) {
+                    }catch(error) {
                         return res.status(500).json({status: 'error', error: 'There is something problem on the server where an error occurred while checking the email. Please try again later.'});
                     }
                     // END CHECK IF EMAIL IS EXIST
@@ -725,7 +725,7 @@ const forgotPassword = async (req, res) => {
             if (!user) {
                 return res.status(400).json({ status: 'fail', error: 'Email is not exist.' });
             }
-        }catch(e) {
+        }catch(error) {
             return res.status(500).json({status: 'error', error: 'There is something problem on the server where an error occurred while checking the email. Please try again later.'});
         }
         // END CHECK IF EMAIL IS NOT EXIST
@@ -876,7 +876,7 @@ const resetPassword = async (req, res) => {
                         if (!user) {
                             return res.status(400).json({ status: 'fail', error: 'Email is not exist.' });
                         }
-                    }catch(e) {
+                    }catch(error) {
                         return res.status(500).json({status: 'error', error: 'There is something problem on the server where an error occurred while checking the email. Please try again later.'});
                     }
                     // END CHECK IF EMAIL IS NOT EXIST
@@ -888,7 +888,7 @@ const resetPassword = async (req, res) => {
                         if (user) {
                             return res.status(200).json({ status: 'ok'});
                         }
-                    }catch(e) {
+                    }catch(error) {
                         console.log({
                             fileName: 'v1AuthenticationController.js',
                             errorDescription: 'There is something problem on the server where an error occurred while checking the email and update the password.',
@@ -982,7 +982,7 @@ const accountRecoveryResetPasswordVerifyToken = async (req, res) => {
                         if (!user) {
                             return res.status(400).json({ status: 'fail', error: 'Email is not exist.' });
                         }
-                    }catch(e) {
+                    }catch(error) {
                         console.log({
                             fileName: 'v1AuthenticationController.js',
                             errorDescription: 'There is something problem on the server where an error occurred while checking the email. Please try again later.',
