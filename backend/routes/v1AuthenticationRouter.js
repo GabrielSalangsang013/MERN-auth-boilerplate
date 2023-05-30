@@ -8,25 +8,12 @@ function authenticateToken(req, res, next) {
     const token = req.cookies.access_token;
     if (token == null) {
         // THE USER HAS NO TOKEN
-        console.log({
-            fileName: 'v1AuthenticationRouter.js',
-            errorDescription: 'Unauthorized',
-            errorLocation: 'authenticateToken',
-            statusCode: 401
-        });
         return res.status(401).json({status: 'error', error: 'You are unauthorized user.'});
     }
 
     jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, user) => {
         if (err) {
             // THE USER HAS TOKEN BUT INVALID 
-            console.log({
-                fileName: 'v1AuthenticationRouter.js',
-                errorDescription: 'Forbidden or Invalid Token',
-                errorLocation: 'authenticateToken',
-                error: err,
-                statusCode: 403
-            });
             return res.status(403).json({status: 'error', error: 'You are forbidden.'});
         }
         req.user = user;

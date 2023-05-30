@@ -37,9 +37,11 @@ function App() {
           // alert(error.response.data.error);
         }
 
-        if(window.location.href.indexOf('/activate/')) {
+        if(window.location.href.indexOf('/activate')) {
 
         }else if(window.location.href.indexOf('/forgot-password')) {
+
+        }else if(window.location.href.indexOf('/reset-password')){
 
         }else if(!(window.location.href.indexOf('register') > -1)) {
           navigate('/login');
