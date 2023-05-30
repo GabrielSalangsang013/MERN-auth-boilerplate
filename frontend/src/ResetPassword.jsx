@@ -10,7 +10,7 @@ axios.defaults.withCredentials = true;
 const ResetPassword = () => {
     const navigate = useNavigate();
     const { token } = useParams();
-    const [isValidAccountRecoveryResetPasswordToken, setIsValidAccountRecoveryResetPasswordToken] = useState(false);
+    const [isAccountRecoveryResetPasswordTokenValid, setIsAccountRecoveryResetPasswordTokenValid] = useState(false);
 
     const initialValues = {
         password: '',
@@ -77,7 +77,7 @@ const ResetPassword = () => {
             })
             .then((response) => {
                 if(response.status === 200 && response.data.status === 'ok') {
-                    setIsValidAccountRecoveryResetPasswordToken(true);
+                    setIsAccountRecoveryResetPasswordTokenValid(true);
                 }
             })
             .catch(function (error) {
@@ -107,7 +107,7 @@ const ResetPassword = () => {
     }, [])
 
 
-    if(!isValidAccountRecoveryResetPasswordToken) {
+    if(!isAccountRecoveryResetPasswordTokenValid) {
         return (
             <>
                 <h1>Token is validating</h1>
