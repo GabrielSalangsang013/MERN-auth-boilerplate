@@ -61,7 +61,7 @@ const AccountActivation = () => {
     if(!isActivating) {
         return (
             <>
-                <h1>Activation link has been sent to your email.</h1>
+                <h1>Loading</h1>
             </>
         )
     }

@@ -120,7 +120,7 @@ const ResetPassword = () => {
     if(!isAccountRecoveryResetPasswordTokenValid) {
         return (
             <>
-                <h1>Token is validating</h1>
+                <h1>Loading</h1>
             </>
         )
     }
