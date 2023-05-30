@@ -778,129 +778,133 @@ const resetPassword = async (req, res) => {
     try {
         let { token, password, repeatPassword } = mongoSanitize.sanitize(req.body);
 
-        jwt.verify(token, process.env.ACCOUNT_RECOVERY_RESET_PASSWORD_TOKEN_SECRET, async (error, decoded) => {
-            if(error) {
-                return res.status(401).json({status: 'fail', error: 'Expired link or Invalid Token. Please enter your email again.'});
-            }else {
-                // STEP 1: SANITIZE THE USER INPUT TO PREVENT NOSQL INJECTION ATTACK AND CHECK IF ALL FIELDS ARE NOT EMPTY
-                let { email } = mongoSanitize.sanitize(jwt.decode(token));
-
-                let emptyFields = [];
-
-                if(!email) {
-                    emptyFields.push('email');
-                }
-
-                if(!password) {
-                    emptyFields.push('password');
-                }
-
-                if(!repeatPassword) {
-                    emptyFields.push('repeatPassword');
-                }
-
-                if(emptyFields.length > 0) {
-                    return res.status(400).json({ status: 'fail', error: 'Please complete the Recovery Account Reset Password Form', emptyFields});
-                }
-                // END SANITIZE THE USER INPUT TO PREVENT NOSQL INJECTION ATTACK AND CHECK IF ALL FIELDS ARE NOT EMPTY
-
-                // STEP 2: SANITIZE THE USER INPUT TO PREVENT XSS ATTACK
-                email = xss(email);
-                password = xss(password);
-                repeatPassword = xss(repeatPassword);
-                // END SANITIZE THE USER INPUT TO PREVENT XSS ATTACK
-
-                // STEP 3: VALIDATE USER INPUT
-                const validationSchema = Joi.object({
-                    email: Joi.string()
-                        .required()
-                        .trim()
-                        .pattern(/^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/)
-                        .email({ minDomainSegments: 2, tlds: { allow: false } })
-                        .custom((value, helpers) => {
-                            const sanitizedValue = escape(value);
-                            if (sanitizedValue !== value) {
-                            return helpers.error('email-xss-nosql');
-                            }
-                            return value;
-                        })
-                        .messages({
-                            'string.base': 'Email must be a string',
-                            'string.empty': 'Email is required',
-                            'string.pattern.base': 'Please enter a valid email address',
-                            'string.email': 'Please enter a valid email address',
-                            'any.required': 'Email is required',
-                            'email-xss-nosql': 'Invalid email format or potentially unsafe characters',
-                        }),
-                    password: Joi.string()
-                        .required()
-                        .min(12)
-                        .pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()\-_=+{};:,<.>]).+$/)
-                        .custom((value, helpers) => {
-                            if (/\b(password|123456789)\b/i.test(value)) {
-                                return helpers.error('password-security');
-                            }
-                            return value;
-                        })
-                        .messages({
-                            'string.base': 'Password must be a string',
-                            'string.empty': 'Password is required',
-                            'string.min': 'Password must be at least 12 characters',
-                            'string.pattern.base': 'Password must contain at least one uppercase letter, one lowercase letter, one digit, and one special character',
-                            'any.required': 'Password is required',
-                            'password-security': 'Password should not be commonly used or easily guessable',
-                        }),
-                    repeatPassword: Joi.string()
-                        .required()
-                        .valid(Joi.ref('password'))
-                        .messages({
-                            'string.base': 'Repeat Password must be a string',
-                            'string.empty': 'Please repeat your password',
-                            'any.only': 'Passwords must match',
-                            'any.required': 'Please repeat your password',
-                        }),
-                });
-
-                const { error } = validationSchema.validate({email, password, repeatPassword});
-
-                if (error) {
-                    return res.status(400).json({ status: 'fail', error: error.details[0].message });
-                }
-                // END VALIDATE USER INPUT
-
-                // STEP 4: CHECK IF EMAIL IS NOT EXIST
-                try {
-                    const user = await User.findOne({ email });
-
-                    if (!user) {
-                        return res.status(400).json({ status: 'fail', error: 'Email is not exist.' });
+        if(token) {
+            jwt.verify(token, process.env.ACCOUNT_RECOVERY_RESET_PASSWORD_TOKEN_SECRET, async (error, decoded) => {
+                if(error) {
+                    return res.status(401).json({status: 'fail', error: 'Expired link or Invalid Token. Please enter your email again.'});
+                }else {
+                    // STEP 1: SANITIZE THE USER INPUT TO PREVENT NOSQL INJECTION ATTACK AND CHECK IF ALL FIELDS ARE NOT EMPTY
+                    let { email } = mongoSanitize.sanitize(jwt.decode(token));
+    
+                    let emptyFields = [];
+    
+                    if(!email) {
+                        emptyFields.push('email');
                     }
-                }catch(e) {
-                    return res.status(500).json({status: 'error', error: 'There is something problem on the server where an error occurred while checking the email. Please try again later.'});
-                }
-                // END CHECK IF EMAIL IS NOT EXIST
-
-                // STEP 5: UPDATE THE PASSWORD OF THE USER
-                try {
-                    const hashedPassword = await argon2.hash(password);
-                    const user = await User.findOneAndUpdate({ email }, { password: hashedPassword });
-                    if (user) {
-                        return res.status(200).json({ status: 'ok'});
+    
+                    if(!password) {
+                        emptyFields.push('password');
                     }
-                }catch(e) {
-                    console.log({
-                        fileName: 'v1AuthenticationController.js',
-                        errorDescription: 'There is something problem on the server where an error occurred while checking the email and update the password.',
-                        errorLocation: 'resetPassword',
-                        error: error,
-                        statusCode: 500
+    
+                    if(!repeatPassword) {
+                        emptyFields.push('repeatPassword');
+                    }
+    
+                    if(emptyFields.length > 0) {
+                        return res.status(400).json({ status: 'fail', error: 'Please complete the Recovery Account Reset Password Form', emptyFields});
+                    }
+                    // END SANITIZE THE USER INPUT TO PREVENT NOSQL INJECTION ATTACK AND CHECK IF ALL FIELDS ARE NOT EMPTY
+    
+                    // STEP 2: SANITIZE THE USER INPUT TO PREVENT XSS ATTACK
+                    email = xss(email);
+                    password = xss(password);
+                    repeatPassword = xss(repeatPassword);
+                    // END SANITIZE THE USER INPUT TO PREVENT XSS ATTACK
+    
+                    // STEP 3: VALIDATE USER INPUT
+                    const validationSchema = Joi.object({
+                        email: Joi.string()
+                            .required()
+                            .trim()
+                            .pattern(/^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/)
+                            .email({ minDomainSegments: 2, tlds: { allow: false } })
+                            .custom((value, helpers) => {
+                                const sanitizedValue = escape(value);
+                                if (sanitizedValue !== value) {
+                                return helpers.error('email-xss-nosql');
+                                }
+                                return value;
+                            })
+                            .messages({
+                                'string.base': 'Email must be a string',
+                                'string.empty': 'Email is required',
+                                'string.pattern.base': 'Please enter a valid email address',
+                                'string.email': 'Please enter a valid email address',
+                                'any.required': 'Email is required',
+                                'email-xss-nosql': 'Invalid email format or potentially unsafe characters',
+                            }),
+                        password: Joi.string()
+                            .required()
+                            .min(12)
+                            .pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()\-_=+{};:,<.>]).+$/)
+                            .custom((value, helpers) => {
+                                if (/\b(password|123456789)\b/i.test(value)) {
+                                    return helpers.error('password-security');
+                                }
+                                return value;
+                            })
+                            .messages({
+                                'string.base': 'Password must be a string',
+                                'string.empty': 'Password is required',
+                                'string.min': 'Password must be at least 12 characters',
+                                'string.pattern.base': 'Password must contain at least one uppercase letter, one lowercase letter, one digit, and one special character',
+                                'any.required': 'Password is required',
+                                'password-security': 'Password should not be commonly used or easily guessable',
+                            }),
+                        repeatPassword: Joi.string()
+                            .required()
+                            .valid(Joi.ref('password'))
+                            .messages({
+                                'string.base': 'Repeat Password must be a string',
+                                'string.empty': 'Please repeat your password',
+                                'any.only': 'Passwords must match',
+                                'any.required': 'Please repeat your password',
+                            }),
                     });
-
-                    return res.status(500).json({status: 'error', error: 'There is something problem on the server where an error occurred while checking the email and update the password. Please try again later.'});
+    
+                    const { error } = validationSchema.validate({email, password, repeatPassword});
+    
+                    if (error) {
+                        return res.status(400).json({ status: 'fail', error: error.details[0].message });
+                    }
+                    // END VALIDATE USER INPUT
+    
+                    // STEP 4: CHECK IF EMAIL IS NOT EXIST
+                    try {
+                        const user = await User.findOne({ email });
+    
+                        if (!user) {
+                            return res.status(400).json({ status: 'fail', error: 'Email is not exist.' });
+                        }
+                    }catch(e) {
+                        return res.status(500).json({status: 'error', error: 'There is something problem on the server where an error occurred while checking the email. Please try again later.'});
+                    }
+                    // END CHECK IF EMAIL IS NOT EXIST
+    
+                    // STEP 5: UPDATE THE PASSWORD OF THE USER
+                    try {
+                        const hashedPassword = await argon2.hash(password);
+                        const user = await User.findOneAndUpdate({ email }, { password: hashedPassword });
+                        if (user) {
+                            return res.status(200).json({ status: 'ok'});
+                        }
+                    }catch(e) {
+                        console.log({
+                            fileName: 'v1AuthenticationController.js',
+                            errorDescription: 'There is something problem on the server where an error occurred while checking the email and update the password.',
+                            errorLocation: 'resetPassword',
+                            error: error,
+                            statusCode: 500
+                        });
+    
+                        return res.status(500).json({status: 'error', error: 'There is something problem on the server where an error occurred while checking the email and update the password. Please try again later.'});
+                    }
+                    // END UPDATE THE PASSWORD OF THE USER
                 }
-                // END UPDATE THE PASSWORD OF THE USER
-            }
-        })
+            })
+        }else {
+            return res.status(401).json({status: 'error', error: 'No token'});
+        }
     }catch(error) {
         console.log({
             fileName: 'v1AuthenticationController.js',
