@@ -51,11 +51,12 @@ const ForgotPassword = () => {
         })
         .catch(function (error) {
             if(error.response.status === 400 && error.response.data.status === 'fail') {
-                // USER MUST COMPLETE THE REGISTER FORM FIELDS 
+                // USER MUST COMPLETE THE RECOVERY ACCOUNT FORM FIELDS 
                 // MUST PASSED IN THE VALIDATION IN THE BACKEND 
                 // THE EMAIL IS NOT EXIST
                 alert(error.response.data.error);
             }else if(error.response.status === 500 && error.response.data.status === 'error') {
+                // ERROR OCCURRED WHILE CHECKING THE EMAIL
                 // THIS IS AN ERROR FROM THE BACKEND
                 // ERROR IN SENDING THE EMAIL ACCOUNT RECOVERY RESET PASSWORD
                 alert(error.response.data.error);

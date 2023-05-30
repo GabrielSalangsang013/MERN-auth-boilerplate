@@ -58,11 +58,20 @@ const ResetPassword = () => {
         })
         .catch(function (error) {
             if(error.response.status === 400 && error.response.data.status === 'fail') {
-                // USER MUST COMPLETE THE RESET PASSWORD FORM FIELDS 
+                // USER MUST COMPLETE THE RECOVERY ACCOUNT RESET PASSWORD FORM FIELDS 
                 // MUST PASSED IN THE VALIDATION IN THE BACKEND 
                 // THE EMAIL IS NOT EXIST
                 alert(error.response.data.error);
+            }else if(error.response.status === 401 && error.response.data.status === 'error') {
+                // NO TOKEN
+                navigate('/login');
+            }else if(error.response.status === 401 && error.response.data.status === 'fail') {
+                // EXPIRED LINK OR INVALID TOKEN
+                alert(error.response.data.error);
+                navigate('/forgot-password');
             }else if(error.response.status === 500 && error.response.data.status === 'error') {
+                // ERROR OCCURRED WHILE CHECKING THE EMAIL
+                // ERROR OCCURRED WHILE CHECKING THE EMAIL AND UPDATING THE PASSWORD
                 // THIS IS AN ERROR FROM THE BACKEND
                 alert(error.response.data.error);
             }
@@ -82,7 +91,7 @@ const ResetPassword = () => {
             })
             .catch(function (error) {
                 if(error.response.status === 400 && error.response.data.status === 'fail') {
-                    // USER MUST COMPLETE THE RECOVERY ACCOUNT FORM FIELDS 
+                    // USER MUST COMPLETE THE RECOVERY ACCOUNT RECOVERY ACCOUNT FORM FIELDS 
                     // MUST PASSED IN THE VALIDATION IN THE BACKEND 
                     // THE EMAIL IS NOT EXIST
                     alert(error.response.data.error);
@@ -95,6 +104,7 @@ const ResetPassword = () => {
                     alert(error.response.data.error);
                     navigate('/forgot-password');
                 }else if(error.response.status === 500 && error.response.data.status === 'error') {
+                    // ERROR OCCURRED WHILE CHECKING THE EMAIL
                     // THIS IS AN ERROR FROM THE BACKEND
                     alert(error.response.data.error);
                     navigate('/login');

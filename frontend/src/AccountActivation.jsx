@@ -41,6 +41,12 @@ const AccountActivation = () => {
                     alert(error.response.data.error);
                     navigate('/register');
                 }else if(error.response.status === 500 && error.response.data.status === 'error') {
+                    // ERROR OCCURRED WHILE CHECKING THE USERNAME
+                    // ERROR OCCURRED WHILE CHECKING THE EMAIL
+                    // ERROR OCCURRED IN SEARCHING PROFILE
+                    // ERROR OCCURRED IN SEARCHING USER
+                    // ERROR OCCURRED IN CREATING USER
+                    // ERROR OCCURRED IN CREATING PROFILE
                     // THIS IS AN ERROR FROM THE BACKEND
                     alert(error.response.data.error);
                     navigate('/login');

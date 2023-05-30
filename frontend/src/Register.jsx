@@ -117,6 +117,8 @@ const Register = () => {
                 // THE EMAIL MUST NOT EXIST OR MUST BE UNIQUE
                 alert(error.response.data.error);
             }else if(error.response.status === 500 && error.response.data.status === 'error') {
+                // ERROR OCCURRED WHILE CHECKING THE USERNAME
+                // ERROR OCCURRED WHILE CHECKING THE EMAIL
                 // THIS IS AN ERROR FROM THE BACKEND
                 // ERROR IN SENDING THE EMAIL ACCOUNT ACTIVATION
                 alert(error.response.data.error);

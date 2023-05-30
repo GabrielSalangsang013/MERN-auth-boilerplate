@@ -936,7 +936,7 @@ const accountRecoveryResetPasswordVerifyToken = async (req, res) => {
                     }
 
                     if(emptyFields.length > 0) {
-                        return res.status(400).json({ status: 'fail', error: 'Please complete the Recovery Account Reset Password Form', emptyFields});
+                        return res.status(400).json({ status: 'fail', error: 'Please complete the Recovery Account Form', emptyFields});
                     }
                     // END SANITIZE THE USER INPUT TO PREVENT NOSQL INJECTION ATTACK AND CHECK IF ALL FIELDS ARE NOT EMPTY
 
@@ -983,6 +983,14 @@ const accountRecoveryResetPasswordVerifyToken = async (req, res) => {
                             return res.status(400).json({ status: 'fail', error: 'Email is not exist.' });
                         }
                     }catch(e) {
+                        console.log({
+                            fileName: 'v1AuthenticationController.js',
+                            errorDescription: 'There is something problem on the server where an error occurred while checking the email. Please try again later.',
+                            errorLocation: 'accountRecoveryResetPasswordVerifyToken',
+                            error: error,
+                            statusCode: 500
+                        });
+
                         return res.status(500).json({status: 'error', error: 'There is something problem on the server where an error occurred while checking the email. Please try again later.'});
                     }
                     // END CHECK IF EMAIL IS NOT EXIST
