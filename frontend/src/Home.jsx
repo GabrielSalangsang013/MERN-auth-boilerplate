@@ -23,7 +23,8 @@ const Home = () => {
                 // UNAUTHORIZED USER
                 alert(error.response.data.error);
             }else if(error.response.status === 403  && error.response.data.status === 'error') {
-                // FORBIDDEN OR INVALID TOKEN
+                // FORBIDDEN, INVALID JWT TOKEN
+                // FORBIDDEN, INVALID CSRF TOKEN
                 alert(error.response.data.error);
             }else if(error.response.status === 500 && error.response.data.status === 'error') {
                 // THIS IS AN ERROR FROM THE BACKEND
@@ -50,7 +51,8 @@ const Home = () => {
                 // UNAUTHORIZED USER
                 alert(error.response.data.error);
             }else if(error.response.status === 403  && error.response.data.status === 'error') {
-                // FORBIDDEN OR INVALID TOKEN
+                // FORBIDDEN, INVALID JWT TOKEN
+                // FORBIDDEN, INVALID CSRF TOKEN
                 alert(error.response.data.error);
             }else if(error.response.status === 500 && error.response.data.status === 'error') {
                 // THIS IS AN ERROR FROM THE BACKEND

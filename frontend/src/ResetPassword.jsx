@@ -9,8 +9,10 @@ axios.defaults.withCredentials = true;
 
 const ResetPassword = () => {
     const navigate = useNavigate();
-    const { token } = useParams();
+    const { token, csrfToken } = useParams();
     const [isAccountRecoveryResetPasswordTokenValid, setIsAccountRecoveryResetPasswordTokenValid] = useState(false);
+
+    console.log(csrfToken);
 
     const initialValues = {
         password: '',
@@ -47,6 +49,7 @@ const ResetPassword = () => {
         // STEP 3: SEND THE SANITIZED INPUT TO THE BACKEND FOR THE REGISTRATION OF THE ACCOUNT PURPOSES
         axios.post('http://localhost:4000/api/v1/authentication/reset-password', {
             token: token,
+            csrfToken: csrfToken,
             password: sanitizedRegisterPassword,
             repeatPassword: sanitizedRegisterRepeatPassword
         })
@@ -82,7 +85,8 @@ const ResetPassword = () => {
     useEffect(() => {
         if(token !== null) {
             axios.post(`http://localhost:4000/api/v1/authentication/account-recovery/reset-password/verify-token`, {
-                token: token
+                token: token,
+                csrfToken: csrfToken
             })
             .then((response) => {
                 if(response.status === 200 && response.data.status === 'ok') {
@@ -93,14 +97,15 @@ const ResetPassword = () => {
                 if(error.response.status === 400 && error.response.data.status === 'fail') {
                     // USER MUST COMPLETE THE RECOVERY ACCOUNT RECOVERY ACCOUNT FORM FIELDS 
                     // MUST PASSED IN THE VALIDATION IN THE BACKEND 
-                    // THE EMAIL IS NOT EXIST
+                    // THE EMAIL IS NOT EXIST OR USER DOES NOT REQUEST FORGOT PASSWORD
                     alert(error.response.data.error);
                     navigate('/login');
                 }else if(error.response.status === 401 && error.response.data.status === 'error') {
                     // NO TOKEN
                     navigate('/login');
                 }else if(error.response.status === 401 && error.response.data.status === 'fail') {
-                    // EXPIRED LINK OR INVALID TOKEN
+                    // EXPIRED LINK OR INVALID JWT TOKEN
+                    // EXPIRED LINK OR INVALID CSRF TOKEN
                     alert(error.response.data.error);
                     navigate('/forgot-password');
                 }else if(error.response.status === 500 && error.response.data.status === 'error') {

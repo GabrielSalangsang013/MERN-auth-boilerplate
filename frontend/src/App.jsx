@@ -30,7 +30,8 @@ function App() {
           // UNAUTHORIZED USER
           // alert(error.response.data.error);
         }else if(error.response.status === 403  && error.response.data.status === 'error') {
-          // FORBIDDEN OR INVALID TOKEN
+          // FORBIDDEN, INVALID JWT TOKEN
+          // FORBIDDEN, INVALID CSRF TOKEN
           // alert(error.response.data.error);
         }else if(error.response.status === 500 && error.response.data.status === 'error') {
           // THIS IS AN ERROR FROM THE BACKEND
@@ -68,7 +69,7 @@ function App() {
           <Route path='/register' exact element={<Register />}/>
           <Route path='/activate/:token' exact element={<AccountActivation  />}/>
           <Route path='/forgot-password' exact element={<ForgotPassword />}/>
-          <Route path='/reset-password/:token' exact element={<ResetPassword />}/>
+          <Route path='/reset-password/:token/:csrfToken' exact element={<ResetPassword />}/>
       </Routes>
     </div>
   )

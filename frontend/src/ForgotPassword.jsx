@@ -57,6 +57,7 @@ const ForgotPassword = () => {
                 alert(error.response.data.error);
             }else if(error.response.status === 500 && error.response.data.status === 'error') {
                 // ERROR OCCURRED WHILE CHECKING THE EMAIL
+                // ERROR OCCURRED WHILE UPDATING THE FORGOT PASSWORD OF THE USER
                 // THIS IS AN ERROR FROM THE BACKEND
                 // ERROR IN SENDING THE EMAIL ACCOUNT RECOVERY RESET PASSWORD
                 alert(error.response.data.error);

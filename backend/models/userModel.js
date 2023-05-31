@@ -64,6 +64,16 @@ const userSchema = new Schema({
       },
     ]
   },
+  forgotPassword: {
+    type: 'boolean',
+    required: true,
+    default: false
+  },
+  csrfTokenSecret: {
+    type: Schema.Types.ObjectId,
+    ref: 'CSRFTokenSecret',
+    required: true
+  },
   profile: {
     type: Schema.Types.ObjectId,
     ref: 'Profile',
