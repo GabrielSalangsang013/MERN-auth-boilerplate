@@ -13,7 +13,7 @@ const {
     resetPasswordLimiter,
     resetPasswordVerifyTokenLimiter,
     logoutLimiter
-} = require('../utils/limiters');
+} = require('../utils/v1AuthenticationLimiter');
 
 function authenticateToken(req, res, next) {
     const token = req.cookies.access_token;
