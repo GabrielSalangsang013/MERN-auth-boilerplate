@@ -7,12 +7,11 @@ const Joi = require('joi');
 const { escape } = require('he');
 const xss = require('xss'); // FOR XSS PROTECTION IN REGISTER AND LOGIN PURPOSES
 const mongoSanitize = require('express-mongo-sanitize'); // FOR NOSQL INJECTION PROTECTION IN REGISTER AND LOGIN PURPOSES
-const frontendConfig = require('../config/frontend');
 const sendEmail = require('../utils/sendEmail');
 const argon2 = require('argon2');
 const Tokens = require('csrf');
-const JWT_ACCESS_TOKEN_EXPIRATION = 60 * 1000; // 60 secs
-const CSRF_TOKEN_EXPIRATION = 60 * 1000; // 60 secs
+const JWT_ACCESS_TOKEN_EXPIRATION = 60 * 1000; // 60 secs - USED IN LOGIN AND ACTIVATE FUNCTION
+const CSRF_TOKEN_EXPIRATION = 60 * 1000; // 60 secs - USED IN LOGIN AND ACTIVATE FUNCTION
 
 const user = async (req, res) => {    
     try {
@@ -202,7 +201,7 @@ const register = async (req, res) => {
 
         // STEP 6: SEND EMAIL TO THE USER TO ACTIVATE USER ACCOUNT
         const ACCOUNT_ACTIVATION_TOKEN = jwt.sign({username, email, password, repeatPassword, fullName}, process.env.ACCOUNT_ACTIVATION_TOKEN_SECRET, {expiresIn: process.env.ACCOUNT_ACTIVATION_EXPIRES_IN_STRING});
-        const activateAccountURL = `${frontendConfig.uri}/activate/${ACCOUNT_ACTIVATION_TOKEN}`;
+        const activateAccountURL = `${process.env.REACT_URL}/activate/${ACCOUNT_ACTIVATION_TOKEN}`;
         const html = `
             <h1>Your account will be activated by clicking the link below</h1>
             <hr />
@@ -250,7 +249,7 @@ const activate = async (req, res) => {
         if(token) {
             jwt.verify(token, process.env.ACCOUNT_ACTIVATION_TOKEN_SECRET, async (error, decoded) => {
                 if(error) {
-                    return res.status(401).json({status: 'fail', error: 'Expired link or Invalid Token. Please sign up again.'});
+                    return res.status(401).json({status: 'fail', error: 'Expired link or Invalid JWT Token. Please sign up again.'});
                 }else {
                     // STEP 1: SANITIZE THE USER INPUT TO PREVENT NOSQL INJECTION ATTACK AND CHECK IF ALL FIELDS ARE NOT EMPTY
                     let { username, email, password, repeatPassword, fullName } = mongoSanitize.sanitize(jwt.decode(token));
@@ -653,7 +652,7 @@ const login = async (req, res) => {
         const user = await User.findOne({ username }).populate('profile').populate('csrfTokenSecret'); // return object only
         
         if (!user) {
-            return res.status(401).json({status: 'fail', error: 'Invalid username or password.' });
+            return res.status(401).json({status: 'fail', error: 'Invalid username.' });
         }
         // END CHECK IF USERNAME IS EXIST - THE USERNAME MUST EXIST TO BE SUCCESSFULLY LOGIN
 
@@ -661,7 +660,7 @@ const login = async (req, res) => {
         const isMatched = await user.matchPasswords(password);
 
         if (!isMatched) {
-            return res.status(401).json({status: 'fail', error: 'Invalid username or password.' });
+            return res.status(401).json({status: 'fail', error: 'Invalid password.' });
         }
         // END CHECK IF PASSWORD IS MATCH - THE PASSWORD MUST BE MATCH TO BE SUCCESSFULLY LOGIN
 
@@ -826,7 +825,7 @@ const forgotPassword = async (req, res) => {
             {expiresIn: process.env.ACCOUNT_RECOVERY_RESET_PASSWORD_EXPIRES_IN_STRING}
         );
 
-        const recoverAccountResetPasswordURL = `${frontendConfig.uri}/reset-password/${ACCOUNT_RECOVERY_RESET_PASSWORD_JWT_TOKEN}/${ACCOUNT_RECOVERY_RESET_PASSWORD_CSRF_TOKEN}`;
+        const recoverAccountResetPasswordURL = `${process.env.REACT_URL}/reset-password/${ACCOUNT_RECOVERY_RESET_PASSWORD_JWT_TOKEN}/${ACCOUNT_RECOVERY_RESET_PASSWORD_CSRF_TOKEN}`;
         const html = `
             <h1>You can update your password to recover your account by clicking the link below</h1>
             <hr />

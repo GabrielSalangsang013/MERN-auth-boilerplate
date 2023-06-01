@@ -37,7 +37,7 @@ const AccountActivation = () => {
                     // NO TOKEN
                     navigate('/login');
                 }else if(error.response.status === 401 && error.response.data.status === 'fail') {
-                    // EXPIRED LINK OR INVALID TOKEN
+                    // EXPIRED LINK OR INVALID JWT TOKEN
                     alert(error.response.data.error);
                     navigate('/register');
                 }else if(error.response.status === 500 && error.response.data.status === 'error') {
