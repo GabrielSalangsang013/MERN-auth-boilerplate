@@ -1,0 +1,101 @@
+const rateLimit = require('express-rate-limit');
+const MongoStore = require('rate-limit-mongo');
+
+const userLimiter = rateLimit({
+    store: new MongoStore({
+      uri: process.env.MONGO_DB_URI, // MongoDB connection URI
+      collectionName: 'user-limits', // MongoDB collection to store rate limit data
+      expireTimeMs: 60 * 1000, // Time window in milliseconds
+      errorHandler: console.error, // Optional error handler
+    }),
+    max: 5, // Maximum number of requests per time window
+    message: 'Too many user requests, please try again later.',
+});
+
+const loginLimiter = rateLimit({
+    store: new MongoStore({
+      uri: process.env.MONGO_DB_URI, // MongoDB connection URI
+      collectionName: 'login-limits', // MongoDB collection to store rate limit data
+      expireTimeMs: 60 * 1000, // Time window in milliseconds
+      errorHandler: console.error, // Optional error handler
+    }),
+    max: 5, // Maximum number of requests per time window
+    message: 'Too many login requests, please try again later.',
+});
+
+const registerLimiter = rateLimit({
+    store: new MongoStore({
+      uri: process.env.MONGO_DB_URI, // MongoDB connection URI
+      collectionName: 'register-limits', // MongoDB collection to store rate limit data
+      expireTimeMs: 60 * 1000, // Time window in milliseconds
+      errorHandler: console.error, // Optional error handler
+    }),
+    max: 5, // Maximum number of requests per time window
+    message: 'Too many register requests, please try again later.',
+});
+
+const activateLimiter = rateLimit({
+    store: new MongoStore({
+      uri: process.env.MONGO_DB_URI, // MongoDB connection URI
+      collectionName: 'activate-limits', // MongoDB collection to store rate limit data
+      expireTimeMs: 60 * 1000, // Time window in milliseconds
+      errorHandler: console.error, // Optional error handler
+    }),
+    max: 5, // Maximum number of requests per time window
+    message: 'Too many activate requests, please try again later.',
+});
+
+const forgotPasswordLimiter = rateLimit({
+    store: new MongoStore({
+      uri: process.env.MONGO_DB_URI, // MongoDB connection URI
+      collectionName: 'forgot-password-limits', // MongoDB collection to store rate limit data
+      expireTimeMs: 60 * 1000, // Time window in milliseconds
+      errorHandler: console.error, // Optional error handler
+    }),
+    max: 5, // Maximum number of requests per time window
+    message: 'Too many forgot password requests, please try again later.',
+});
+
+const resetPasswordLimiter = rateLimit({
+    store: new MongoStore({
+      uri: process.env.MONGO_DB_URI, // MongoDB connection URI
+      collectionName: 'reset-password-limits', // MongoDB collection to store rate limit data
+      expireTimeMs: 60 * 1000, // Time window in milliseconds
+      errorHandler: console.error, // Optional error handler
+    }),
+    max: 5, // Maximum number of requests per time window
+    message: 'Too many reset password requests, please try again later.',
+});
+
+const resetPasswordVerifyTokenLimiter = rateLimit({
+    store: new MongoStore({
+      uri: process.env.MONGO_DB_URI, // MongoDB connection URI
+      collectionName: 'reset-password-verify-token-limits', // MongoDB collection to store rate limit data
+      expireTimeMs: 60 * 1000, // Time window in milliseconds
+      errorHandler: console.error, // Optional error handler
+    }),
+    max: 5, // Maximum number of requests per time window
+    message: 'Too many reset password verify token requests, please try again later.',
+});
+
+const logoutLimiter = rateLimit({
+    store: new MongoStore({
+      uri: process.env.MONGO_DB_URI, // MongoDB connection URI
+      collectionName: 'logout-limits', // MongoDB collection to store rate limit data
+      expireTimeMs: 60 * 1000, // Time window in milliseconds
+      errorHandler: console.error, // Optional error handler
+    }),
+    max: 5, // Maximum number of requests per time window
+    message: 'Too many logout requests, please try again later.',
+});
+
+module.exports = {
+    userLimiter,
+    loginLimiter,
+    registerLimiter,
+    activateLimiter,
+    forgotPasswordLimiter,
+    resetPasswordLimiter,
+    resetPasswordVerifyTokenLimiter,
+    logoutLimiter
+}

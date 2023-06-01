@@ -4,6 +4,16 @@ const router = express.Router();
 const v1AuthenticationController = require('../controllers/v1AuthenticationController');
 const jwt = require('jsonwebtoken');
 const Tokens = require('csrf');
+const {
+    userLimiter,
+    loginLimiter,
+    registerLimiter,
+    activateLimiter,
+    forgotPasswordLimiter,
+    resetPasswordLimiter,
+    resetPasswordVerifyTokenLimiter,
+    logoutLimiter
+} = require('../utils/limiters');
 
 function authenticateToken(req, res, next) {
     const token = req.cookies.access_token;
@@ -17,6 +27,9 @@ function authenticateToken(req, res, next) {
             // THE USER HAS JWT TOKEN BUT INVALID 
             return res.status(403).json({status: 'error', error: 'You are forbidden. Invalid JWT Token.'});
         }
+
+        // ADD CHECK IF HAS REQUIRED CLAIMS, OR MATCHES THE USER IN THE DATABASE
+
         req.user = user;
         next();
     })
@@ -39,13 +52,13 @@ function verifyCSRFToken(req, res, next) {
     next();
 }
 
-router.get('/user', authenticateToken, verifyCSRFToken, v1AuthenticationController.user); // USER MUST BE AUTHETICATED
-router.post('/register', v1AuthenticationController.register);
-router.post('/login', v1AuthenticationController.login);
-router.post('/activate', v1AuthenticationController.activate);
-router.post('/forgot-password', v1AuthenticationController.forgotPassword);
-router.post('/reset-password', v1AuthenticationController.resetPassword);
-router.post('/account-recovery/reset-password/verify-token', v1AuthenticationController.accountRecoveryResetPasswordVerifyToken);
-router.post('/logout', authenticateToken, verifyCSRFToken, v1AuthenticationController.logout); // USER MUST BE AUTHETICATED
+router.get('/user', userLimiter, authenticateToken, verifyCSRFToken, v1AuthenticationController.user); // USER MUST BE AUTHETICATED
+router.post('/register', registerLimiter, v1AuthenticationController.register);
+router.post('/login', loginLimiter, v1AuthenticationController.login);
+router.post('/activate', activateLimiter, v1AuthenticationController.activate);
+router.post('/forgot-password', forgotPasswordLimiter, v1AuthenticationController.forgotPassword);
+router.post('/reset-password', resetPasswordLimiter, v1AuthenticationController.resetPassword);
+router.post('/account-recovery/reset-password/verify-token', resetPasswordVerifyTokenLimiter, v1AuthenticationController.accountRecoveryResetPasswordVerifyToken);
+router.post('/logout', logoutLimiter, authenticateToken, verifyCSRFToken, v1AuthenticationController.logout); // USER MUST BE AUTHETICATED
 
 module.exports = router

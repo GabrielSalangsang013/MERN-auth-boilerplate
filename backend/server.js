@@ -7,16 +7,56 @@ const PORT = process.env.PORT || 4000;
 const v1AuthenticationRouter = require('./routes/v1AuthenticationRouter');
 const cookieParser = require('cookie-parser');
 const mongoSanitize = require('express-mongo-sanitize'); // FOR NOSQL INJECTION PROTECTION IN REGISTER AND LOGIN PURPOSES
+const helmet = require('helmet');
 
 mongoose.set('strictQuery', false);
+app.use(helmet({
+    dnsPrefetchControl: {
+        allow: false,
+    },
+    frameguard: {
+        action: "deny",
+    },
+    hidePoweredBy: true,
+    noSniff: true,
+    referrerPolicy: {
+        policy: ["origin"]
+    },
+    xssFilter: true,
+    hsts: {
+        maxAge: 31536000, // 1 year in seconds
+        includeSubDomains: true,
+        preload: true
+    },
+    contentSecurityPolicy: {
+        directives: {
+          defaultSrc: ["'self'"],
+          scriptSrc: ["'self'", "'unsafe-inline'"],
+          styleSrc: ["'self'", "'unsafe-inline'"],
+          imgSrc: ["'self'"],
+          connectSrc: ["'self'"],
+          fontSrc: ["'self'"],
+          objectSrc: ["'none'"],
+          mediaSrc: ["'none'"],
+          frameSrc: ["'none'"]
+        }
+    },
+    featurePolicy: {
+        features: {
+          fullscreen: ["'self'"],
+          camera: ["'none'"],
+          microphone: ["'none'"]
+        }
+    }
+}));
 app.use(express.json());
 app.use(mongoSanitize()); // USER INPUT SANITIZATION AGAINST NOSQL QUERY INJECTION ATTACKS
 app.use(cookieParser());
 app.use(
   cors({
-      origin: ['http://localhost:3000'],
+      origin: [process.env.REACT_URL],
       methods: ['GET', 'POST'],
-      credentials: true,
+      credentials: true
   })
 );
 
