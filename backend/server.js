@@ -8,6 +8,7 @@ const v1AuthenticationRouter = require('./routes/v1AuthenticationRouter');
 const cookieParser = require('cookie-parser');
 const mongoSanitize = require('express-mongo-sanitize'); // FOR NOSQL INJECTION PROTECTION IN REGISTER AND LOGIN PURPOSES
 const helmet = require('helmet');
+const Tokens = require('csrf');
 
 mongoose.set('strictQuery', false);
 app.use(helmet({

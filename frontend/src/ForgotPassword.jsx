@@ -55,6 +55,12 @@ const ForgotPassword = () => {
                 // MUST PASSED IN THE VALIDATION IN THE BACKEND 
                 // THE EMAIL IS NOT EXIST
                 alert(error.response.data.error);
+            }else if(error.response.status === 401 && error.response.data.status === 'error') {
+                // THE USER HAS NO CSRF TOKEN
+                alert(error.response.data.error);
+            }else if(error.response.status === 403 && error.response.data.status === 'error') {
+                // THE USER HAS CSRF TOKEN BUT INVALID 
+                alert(error.response.data.error);
             }else if(error.response.status === 500 && error.response.data.status === 'error') {
                 // ERROR OCCURRED WHILE CHECKING THE EMAIL
                 // ERROR OCCURRED WHILE UPDATING THE FORGOT PASSWORD OF THE USER

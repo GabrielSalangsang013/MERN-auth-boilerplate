@@ -84,6 +84,12 @@ const Login = () => {
                 // THE USERNAME MUST EXIST
                 // THE PASSWORD MUST BE MATCH THAT STORED IN THE BACKEND
                 alert(error.response.data.error);
+            }else if(error.response.status === 401 && error.response.data.status === 'error') {
+                // THE USER HAS NO CSRF TOKEN
+                alert(error.response.data.error);
+            }else if(error.response.status === 403 && error.response.data.status === 'error') {
+                // THE USER HAS CSRF TOKEN BUT INVALID 
+                alert(error.response.data.error);
             }else if(error.response.status === 500 && error.response.data.status === 'error') {
                 // THIS IS AN ERROR FROM THE BACKEND
                 alert(error.response.data.error);

@@ -35,11 +35,15 @@ const AccountActivation = () => {
                     navigate('/register');
                 }else if(error.response.status === 401 && error.response.data.status === 'error') {
                     // NO TOKEN
+                    // THE USER HAS NO CSRF TOKEN
                     navigate('/login');
                 }else if(error.response.status === 401 && error.response.data.status === 'fail') {
                     // EXPIRED LINK OR INVALID JWT TOKEN
                     alert(error.response.data.error);
                     navigate('/register');
+                }else if(error.response.status === 403 && error.response.data.status === 'error') {
+                    // THE USER HAS CSRF TOKEN BUT INVALID 
+                    alert(error.response.data.error);
                 }else if(error.response.status === 500 && error.response.data.status === 'error') {
                     // ERROR OCCURRED WHILE CHECKING THE USERNAME
                     // ERROR OCCURRED WHILE CHECKING THE EMAIL
