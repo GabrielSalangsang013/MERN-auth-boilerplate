@@ -15,7 +15,7 @@ const {
     logoutLimiter
 } = require('../utils/v1AuthenticationLimiter');
 
-const CSRF_TOKEN_EXPIRATION = 60 * 1000; // 60 secs - USED IN LOGIN AND ACTIVATE FUNCTION
+const PUBLIC_CSRF_TOKEN_EXPIRATION = 60 * 1000;
 
 function publicVerifyCSRFToken(req, res, next) {
     const csrfToken = req.cookies.csrf_token;
@@ -48,7 +48,7 @@ function authenticateToken(req, res, next) {
             secure: true, 
             sameSite: 'strict', 
             path: '/', 
-            expires: new Date(new Date().getTime() + CSRF_TOKEN_EXPIRATION)
+            expires: new Date(new Date().getTime() + PUBLIC_CSRF_TOKEN_EXPIRATION)
         });
     }
 
