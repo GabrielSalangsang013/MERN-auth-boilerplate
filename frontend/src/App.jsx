@@ -26,18 +26,6 @@ function App() {
         }
       })
       .catch((error) => {
-        if(error.response.status === 401 && error.response.data.status === 'error') {
-          // UNAUTHORIZED USER
-          // alert(error.response.data.error);
-        }else if(error.response.status === 403  && error.response.data.status === 'error') {
-          // FORBIDDEN, INVALID JWT TOKEN
-          // FORBIDDEN, INVALID CSRF TOKEN
-          // alert(error.response.data.error);
-        }else if(error.response.status === 500 && error.response.data.status === 'error') {
-          // THIS IS AN ERROR FROM THE BACKEND
-          // alert(error.response.data.error);
-        }
-
         if(window.location.href.indexOf('/activate')) {
 
         }else if(window.location.href.indexOf('/forgot-password')) {

@@ -58,24 +58,8 @@ const ResetPassword = () => {
            }
         })
         .catch(function (error) {
-            if(error.response.status === 400 && error.response.data.status === 'fail') {
-                // USER MUST COMPLETE THE RECOVERY ACCOUNT RESET PASSWORD FORM FIELDS 
-                // MUST PASSED IN THE VALIDATION IN THE BACKEND 
-                // THE EMAIL IS NOT EXIST
-                alert(error.response.data.error);
-            }else if(error.response.status === 401 && error.response.data.status === 'error') {
-                // NO TOKEN
-                navigate('/login');
-            }else if(error.response.status === 401 && error.response.data.status === 'fail') {
-                // EXPIRED LINK OR INVALID TOKEN
-                alert(error.response.data.error);
-                navigate('/forgot-password');
-            }else if(error.response.status === 500 && error.response.data.status === 'error') {
-                // ERROR OCCURRED WHILE CHECKING THE EMAIL
-                // ERROR OCCURRED WHILE CHECKING THE EMAIL AND UPDATING THE PASSWORD
-                // THIS IS AN ERROR FROM THE BACKEND
-                alert(error.response.data.error);
-            }
+            alert(error.response.data.message);
+            navigate('/forgot-password');
         })
         // END SEND THE SANITIZED INPUT TO THE BACKEND FOR THE REGISTRATION OF THE ACCOUNT PURPOSES
     };
@@ -92,32 +76,14 @@ const ResetPassword = () => {
                 }
             })
             .catch(function (error) {
-                if(error.response.status === 400 && error.response.data.status === 'fail') {
-                    // USER MUST COMPLETE THE RECOVERY ACCOUNT RECOVERY ACCOUNT FORM FIELDS 
-                    // MUST PASSED IN THE VALIDATION IN THE BACKEND 
-                    // THE EMAIL IS NOT EXIST OR USER DOES NOT REQUEST FORGOT PASSWORD
-                    alert(error.response.data.error);
-                    navigate('/login');
-                }else if(error.response.status === 401 && error.response.data.status === 'error') {
-                    // NO TOKEN
-                    navigate('/login');
-                }else if(error.response.status === 401 && error.response.data.status === 'fail') {
-                    // EXPIRED LINK OR INVALID JWT TOKEN
-                    // EXPIRED LINK OR INVALID CSRF TOKEN
-                    alert(error.response.data.error);
-                    navigate('/forgot-password');
-                }else if(error.response.status === 500 && error.response.data.status === 'error') {
-                    // ERROR OCCURRED WHILE CHECKING THE EMAIL
-                    // THIS IS AN ERROR FROM THE BACKEND
-                    alert(error.response.data.error);
-                    navigate('/login');
-                }
+                alert(error.response.data.message);
+                navigate('/forgot-password');
             })
         }else {
             navigate('/login');
         }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [])
+    }, []);
 
 
     if(!isAccountRecoveryResetPasswordTokenValid) {

@@ -76,24 +76,7 @@ const Login = () => {
             } 
         })
         .catch(function (error) {
-            if(error.response.status === 400 && error.response.data.status === 'fail') {
-                // USER MUST COMPLETE THE LOGIN FORM FIELDS 
-                // MUST PASSED IN THE VALIDATION IN THE BACKEND
-                alert(error.response.data.error);
-            }else if(error.response.status === 401 && error.response.data.status === 'fail') {
-                // THE USERNAME MUST EXIST
-                // THE PASSWORD MUST BE MATCH THAT STORED IN THE BACKEND
-                alert(error.response.data.error);
-            }else if(error.response.status === 401 && error.response.data.status === 'error') {
-                // THE USER HAS NO CSRF TOKEN
-                alert(error.response.data.error);
-            }else if(error.response.status === 403 && error.response.data.status === 'error') {
-                // THE USER HAS CSRF TOKEN BUT INVALID 
-                alert(error.response.data.error);
-            }else if(error.response.status === 500 && error.response.data.status === 'error') {
-                // THIS IS AN ERROR FROM THE BACKEND
-                alert(error.response.data.error);
-            }
+            alert(error.response.data.message);
         });
         // END SEND THE SANITIZED INPUT TO THE BACKEND FOR THE LOGIN PURPOSES
     }

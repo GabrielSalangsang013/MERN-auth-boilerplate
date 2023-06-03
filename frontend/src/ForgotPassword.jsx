@@ -50,24 +50,7 @@ const ForgotPassword = () => {
            }
         })
         .catch(function (error) {
-            if(error.response.status === 400 && error.response.data.status === 'fail') {
-                // USER MUST COMPLETE THE RECOVERY ACCOUNT FORM FIELDS 
-                // MUST PASSED IN THE VALIDATION IN THE BACKEND 
-                // THE EMAIL IS NOT EXIST
-                alert(error.response.data.error);
-            }else if(error.response.status === 401 && error.response.data.status === 'error') {
-                // THE USER HAS NO CSRF TOKEN
-                alert(error.response.data.error);
-            }else if(error.response.status === 403 && error.response.data.status === 'error') {
-                // THE USER HAS CSRF TOKEN BUT INVALID 
-                alert(error.response.data.error);
-            }else if(error.response.status === 500 && error.response.data.status === 'error') {
-                // ERROR OCCURRED WHILE CHECKING THE EMAIL
-                // ERROR OCCURRED WHILE UPDATING THE FORGOT PASSWORD OF THE USER
-                // THIS IS AN ERROR FROM THE BACKEND
-                // ERROR IN SENDING THE EMAIL ACCOUNT RECOVERY RESET PASSWORD
-                alert(error.response.data.error);
-            }
+            alert(error.response.data.message);
         })
         // END SEND THE SANITIZED INPUT TO THE BACKEND FOR THE REGISTRATION OF THE ACCOUNT PURPOSES
     };
