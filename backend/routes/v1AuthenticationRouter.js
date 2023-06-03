@@ -10,6 +10,7 @@ const v1AuthenticationController = require('../controllers/v1AuthenticationContr
 
 // ------------ CONSTANTS --------------------
 const cookiesSettings = require('../constants/v1AuthenticationCookiesSettings');
+const errorCodes = require('../constants/v1AuthenticationErrorCodes'); // ALL ERROR CODES
 // ------------ CONSTANTS --------------------
 
 // ------------ MIDDLEWARES --------------------
@@ -29,20 +30,20 @@ function authenticateJWTToken(req, res, next) {
     
     if (token == null) {
         // THE USER HAS NO JWT TOKEN
-        return res.status(401).json({status: 'error', error: 'You are unauthorized user.'});
+        return res.status(401).json({message: 'You are unauthorized user.', errorCode: errorCodes.NO_JWT_TOKEN_AUTHENTICATE_JWT_TOKEN});
     }
 
     jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, user) => {
         if (err) {
             // THE USER HAS JWT TOKEN BUT INVALID 
-            return res.status(403).json({status: 'error', error: 'You are forbidden. Invalid JWT Token.'});
+            return res.status(403).json({message: 'You are forbidden. Invalid JWT Token.', errorCode: errorCodes.INVALID_JWT_TOKEN_AUTHENTICATE_JWT_TOKEN});
         }
 
         // ADD CHECK IF HAS REQUIRED CLAIMS, OR MATCHES THE USER IN THE DATABASE
 
         req.user = user;
         next();
-    })
+    });
 }
 
 function verifyPrivateCSRFToken(req, res, next) {
@@ -51,12 +52,12 @@ function verifyPrivateCSRFToken(req, res, next) {
     
     if (csrfToken == null) {
         // THE USER HAS NO CSRF TOKEN
-        return res.status(401).json({status: 'error', error: 'You are unauthorized user.'});
+        return res.status(401).json({message: 'You are unauthorized user.', errorCode: errorCodes.NO_CSRF_TOKEN_VERIFY_PRIVATE_CSRF_TOKEN});
     }
 
     if (!tokens.verify(req.user.csrfTokenSecret.secret, csrfToken)) {
         // THE USER HAS CSRF TOKEN BUT INVALID 
-        return res.status(403).json({status: 'error', error: 'You are forbidden. Invalid CSRF token.'});
+        return res.status(403).json({message: 'You are forbidden. Invalid CSRF token.', errorCode: errorCodes.INVALID_CSRF_TOKEN_VERIFY_PRIVATE_CSRF_TOKEN});
     }
 
     next();
@@ -68,12 +69,12 @@ function verifyPublicCSRFToken(req, res, next) {
 
     if (csrfToken == null) {
         // THE USER HAS NO CSRF TOKEN
-        return res.status(401).json({status: 'error', error: 'You are unauthorized user.'});
+        return res.status(401).json({message: 'You are unauthorized user.', errorCode: errorCodes.NO_CSRF_TOKEN_VERIFY_PUBLIC_CSRF_TOKEN});
     }
 
     if (!tokens.verify(process.env.PUBLIC_CSRF_TOKEN_SECRET, csrfToken)) {
         // THE USER HAS CSRF TOKEN BUT INVALID 
-        return res.status(403).json({status: 'error', error: 'You are forbidden. Invalid CSRF token.'});
+        return res.status(403).json({message: 'You are forbidden. Invalid CSRF token.', errorCode: errorCodes.INVALID_CSRF_TOKEN_VERIFY_PUBLIC_CSRF_TOKEN});
     }
 
     next();
