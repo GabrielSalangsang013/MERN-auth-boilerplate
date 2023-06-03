@@ -35,10 +35,9 @@ function authenticateJWTToken(req, res, next) {
     
     if (token == null) {
         const tokens = new Tokens();
-        
+
         // THE USER HAS NO JWT TOKEN
         if (!tokens.verify(process.env.PUBLIC_CSRF_TOKEN_SECRET, csrfToken)) {
-            // THE USER HAS CSRF TOKEN BUT INVALID 
             const csrfTokenSecret = process.env.PUBLIC_CSRF_TOKEN_SECRET;
             const csrfToken = tokens.create(csrfTokenSecret);
         
