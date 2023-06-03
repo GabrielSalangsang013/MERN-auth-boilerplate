@@ -1,62 +1,45 @@
 require('dotenv').config();
+const jwt = require('jsonwebtoken');
+const argon2 = require('argon2');
+const Tokens = require('csrf');
+const Joi = require('joi');
+const { escape } = require('he'); 
+const xss = require('xss'); 
+const mongoSanitize = require('express-mongo-sanitize');
+
+// ----------------- MODELS -----------------
 const User = require('../models/userModel');
 const Profile = require('../models/profileModel');
 const CSRFTokenSecret = require('../models/csrfTokenSecretModel');
-const jwt = require('jsonwebtoken');
-const Joi = require('joi');
-const { escape } = require('he');
-const xss = require('xss'); // FOR XSS ATTACK PROTECTION
-const mongoSanitize = require('express-mongo-sanitize'); // FOR NOSQL AND SQL INJECTION ATTACK PROTECTION
-const sendEmail = require('../utils/sendEmail');
-const argon2 = require('argon2');
-const Tokens = require('csrf');
-const JWT_ACCESS_TOKEN_EXPIRATION = 60 * 1000; // 60 secs - USED IN LOGIN AND ACTIVATE FUNCTION
-const CSRF_TOKEN_EXPIRATION = 60 * 1000; // 60 secs - USED IN LOGIN AND ACTIVATE FUNCTION
+// ----------------- MODELS -----------------
 
-const user = async (req, res) => {    
+// ----------------- UTILITIES -----------------
+const sendEmail = require('../utils/sendEmail'); // FOR SENDING EMAIL TO THE USER
+const ErrorResponse = require('../utils/ErrorResponse'); // FOR SENDING ERROR TO THE ERROR HANDLER MIDDLEWARE
+// ----------------- UTILITIES -----------------
+
+// ----------------- CONSTANTS -----------------
+const emailTemplates = require('../constants/v1AuthenticationEmailTemplates'); // EMAIL TEMPLATES
+const errorCodes = require('../constants/v1AuthenticationErrorCodes'); // ALL ERROR CODES
+const cookiesSettings = require('../constants/v1AuthenticationCookiesSettings'); // ALL COOKIES SETTINGS
+const jwtTokensSettings = require('../constants/v1AuthenticationJWTTokensSettings'); // ALL JWT TOKEN SETTINGS
+// ----------------- CONSTANTS -----------------
+
+const user = async (req, res, next) => {    
     try {
         return res.status(200).json({status: 'ok', user: req.user});
     }catch(error) {
-        console.log({
-            fileName: 'v1AuthenticationController.js',
-            errorDescription: 'There is something problem on the server.',
-            errorLocation: 'user',
-            error: error,
-            statusCode: 500
-        });
-        return res.status(500).json({status: 'error', error: 'There is something problem on the server. Please try again later.'});
+        next(error);
     }
 }
 
-const register = async (req, res) => {
+const register = async (req, res, next) => {
     try {
         // STEP 1: SANITIZE THE USER INPUT TO PREVENT NOSQL INJECTION ATTACK AND CHECK IF ALL FIELDS ARE NOT EMPTY
         let {username, email, password, repeatPassword, fullName} = mongoSanitize.sanitize(req.body);
 
-        let emptyFields = [];
-
-        if(!username) {
-            emptyFields.push('username');
-        }
-
-        if(!email) {
-            emptyFields.push('email');
-        }
-
-        if(!password) {
-            emptyFields.push('password');
-        }
-
-        if(!repeatPassword) {
-            emptyFields.push('repeatPassword');
-        }
-
-        if(!fullName) {
-            emptyFields.push('fullName');
-        }
-
-        if(emptyFields.length > 0) {
-            return res.status(400).json({status: 'fail', error: 'Please complete the Registration Form.', emptyFields});
+        if(!username || !email || !password || !repeatPassword || !fullName) {
+            return next(new ErrorResponse(400, "Please complete the Registration Form.", errorCodes.INCOMPLETE_REGISTER_FORM));
         }
         // END SANITIZE THE USER INPUT TO PREVENT NOSQL INJECTION ATTACK AND CHECK IF ALL FIELDS ARE NOT EMPTY
 
@@ -171,113 +154,61 @@ const register = async (req, res) => {
         const { error } = validationSchema.validate({username, email, password, repeatPassword, fullName});
 
         if (error) {
-            return res.status(400).json({ status: 'fail', error: error.details[0].message });
+            return next(new ErrorResponse(400, error.details[0].message, errorCodes.INVALID_USER_INPUT_REGISTER));
         }
         // END VALIDATE USER INPUT
 
         // STEP 4: CHECK IF USERNAME IS EXIST
-        try {
-            const user = await User.findOne({ username });
+        let user = await User.findOne({ username });
 
-            if (user) {
-                return res.status(400).json({ status: 'fail', error: 'Username already exist.' });
-            }
-        }catch(error) {
-            return res.status(500).json({status: 'error', error: 'There is something problem on the server where an error occurred while checking the username. Please try again later.'});
+        if (user) {
+            return next(new ErrorResponse(400, "Username already exist.", errorCodes.USERNAME_EXIST_REGISTER));
         }
         // END CHECK IF USERNAME IS EXIST
 
         // STEP 5: CHECK IF EMAIL IS EXIST
-        try {
-            const user = await User.findOne({ email });
+        user = await User.findOne({ email });
 
-            if (user) {
-                return res.status(400).json({ status: 'fail', error: 'Email already exist.' });
-            }
-        }catch(error) {
-            return res.status(500).json({status: 'error', error: 'There is something problem on the server where an error occurred while checking the email. Please try again later.'});
+        if (user) {
+            return next(new ErrorResponse(400, "Email already exist.", errorCodes.EMAIL_EXIST_REGISTER));
         }
         // END CHECK IF EMAIL IS EXIST
 
         // STEP 6: SEND EMAIL TO THE USER TO ACTIVATE USER ACCOUNT
-        const ACCOUNT_ACTIVATION_TOKEN = jwt.sign({username, email, password, repeatPassword, fullName}, process.env.ACCOUNT_ACTIVATION_TOKEN_SECRET, {expiresIn: process.env.ACCOUNT_ACTIVATION_EXPIRES_IN_STRING});
+        const ACCOUNT_ACTIVATION_TOKEN = jwt.sign({username, email, password, repeatPassword, fullName}, process.env.ACCOUNT_ACTIVATION_TOKEN_SECRET, {expiresIn: jwtTokensSettings.JWT_ACCOUNT_ACTIVATION_EXPIRES_IN_STRING});
         const activateAccountURL = `${process.env.REACT_URL}/activate/${ACCOUNT_ACTIVATION_TOKEN}`;
-        const html = `
-            <h1>Your account will be activated by clicking the link below</h1>
-            <hr />
-            <a href=${activateAccountURL} clicktracking=off>${activateAccountURL}</a>
-        `;
+        const html = emailTemplates.accountActivationEmailTemplate(activateAccountURL);
 
-        try {
-            await sendEmail({
-                to: email,
-                subject: "MERN with Auth - Account Activation",
-                text: "Your account will be activated by clicking the link below",
-                html,
-            });
-
-            return res.status(200).json({ status: 'ok' });
-        } catch (error) {
-            console.log({
-                fileName: 'v1AuthenticationController.js',
-                errorDescription: 'There is something problem on the server in sending the email account activation.',
-                errorLocation: 'register',
-                error: error,
-                statusCode: 500
-            });
-
-            return res.status(500).json({status: 'error', error: 'There is something problem on the server in sending the email account activation. Please try again later.'});
-        }
-        // END SEND EMAIL TO THE USER TO ACTIVATE USER ACCOUNT
-    }catch(error) {
-        console.log({
-            fileName: 'v1AuthenticationController.js',
-            errorDescription: 'There is something problem on the server.',
-            errorLocation: 'register',
-            error: error,
-            statusCode: 500
+        await sendEmail({
+            to: email,
+            subject: "MERN with Auth - Account Activation",
+            text: "Your account will be activated by clicking the link below",
+            html,
         });
 
-        return res.status(500).json({status: 'error', error: 'There is something problem on the server. Please try again later.'});
+        return res.status(200).json({ status: 'ok' });
+        // END SEND EMAIL TO THE USER TO ACTIVATE USER ACCOUNT
+    }catch(error) {
+        next(error);
     }
 }
 
-const activate = async (req, res) => {
+const activate = async (req, res, next) => {
     try {
         const { token } = req.body;
 
-        if(token) {
+        if(!token){
+            return next(new ErrorResponse(401, "No Activate JWT Token", errorCodes.NO_ACCOUNT_ACTIVATION_JWT_TOKEN));
+        }else {
             jwt.verify(token, process.env.ACCOUNT_ACTIVATION_TOKEN_SECRET, async (error, decoded) => {
                 if(error) {
-                    return res.status(401).json({status: 'fail', error: 'Expired link or Invalid JWT Token. Please sign up again.'});
+                    return next(new ErrorResponse(401, "Expired link or Invalid Activate JWT Token. Please sign up again.", errorCodes.EXPIRED_ACCOUNT_ACTIVATION_JWT_TOKEN_OR_INVALID_ACCOUNT_ACTIVATION_JWT_TOKEN));
                 }else {
                     // STEP 1: SANITIZE THE USER INPUT TO PREVENT NOSQL INJECTION ATTACK AND CHECK IF ALL FIELDS ARE NOT EMPTY
-                    let { username, email, password, repeatPassword, fullName } = mongoSanitize.sanitize(jwt.decode(token));
+                    let { username, email, password, repeatPassword, fullName } = mongoSanitize.sanitize(decoded);
 
-                    let emptyFields = [];
-
-                    if(!username) {
-                        emptyFields.push('username');
-                    }
-
-                    if(!email) {
-                        emptyFields.push('email');
-                    }
-
-                    if(!password) {
-                        emptyFields.push('password');
-                    }
-
-                    if(!repeatPassword) {
-                        emptyFields.push('repeatPassword');
-                    }
-
-                    if(!fullName) {
-                        emptyFields.push('fullName');
-                    }
-
-                    if(emptyFields.length > 0) {
-                        return res.status(400).json({status: 'fail', error: 'Please complete the Registration Form.', emptyFields});
+                    if(!username || !email || !password || !repeatPassword || !fullName) {
+                        return next(new ErrorResponse(400, "Please complete the Registration Form.", errorCodes.INCOMPLETE_REGISTER_FORM_ACTIVATE));
                     }
                     // END SANITIZE THE USER INPUT TO PREVENT NOSQL INJECTION ATTACK AND CHECK IF ALL FIELDS ARE NOT EMPTY
 
@@ -392,31 +323,23 @@ const activate = async (req, res) => {
                     const { error } = validationSchema.validate({username, email, password, repeatPassword, fullName});
 
                     if (error) {
-                        return res.status(400).json({ status: 'fail', error: error.details[0].message });
+                        return next(new ErrorResponse(400, error.details[0].message, errorCodes.INVALID_USER_INPUT_REGISTER_ACTIVATE));
                     }
                     // END VALIDATE USER INPUT
 
                     // STEP 4: CHECK IF USERNAME IS EXIST
-                    try {
-                        const user = await User.findOne({ username });
+                    let user = await User.findOne({ username });
 
-                        if (user) {
-                            return res.status(400).json({ status: 'fail', error: 'Username already exist.' });
-                        }
-                    }catch(error) {
-                        return res.status(500).json({status: 'error', error: 'There is something problem on the server where an error occurred while checking the username. Please try again later.'});
+                    if (user) {
+                        return next(new ErrorResponse(400, "Username already exist.", errorCodes.USERNAME_EXIST_REGISTER_ACTIVATE));
                     }
                     // END CHECK IF USERNAME IS EXIST
 
                     // STEP 5: CHECK IF EMAIL IS EXIST
-                    try {
-                        const user = await User.findOne({ email });
+                    user = await User.findOne({ email });
 
-                        if (user) {
-                            return res.status(400).json({ status: 'fail', error: 'Email already exist.' });
-                        }
-                    }catch(error) {
-                        return res.status(500).json({status: 'error', error: 'There is something problem on the server where an error occurred while checking the email. Please try again later.'});
+                    if (user) {
+                        return next(new ErrorResponse(400, "Email already exist.", errorCodes.EMAIL_EXIST_REGISTER_ACTIVATE));
                     }
                     // END CHECK IF EMAIL IS EXIST
 
@@ -424,164 +347,59 @@ const activate = async (req, res) => {
                     const tokens = new Tokens();
                     const csrfTokenSecret = tokens.secretSync();
                     const csrfToken = tokens.create(csrfTokenSecret);
-                    let csrfTokenSecretObj = new CSRFTokenSecret({
-                        secret: csrfTokenSecret
+
+                    const savedCSRFTokenSecret = await CSRFTokenSecret.create({secret: csrfTokenSecret});
+                    const savedProfile = await Profile.create({fullName: fullName, profilePicture: 'https://res.cloudinary.com/dgo6vnzjl/image/upload/c_fill,q_50,w_150/v1685085963/default_male_avatar_xkpekq.webp'});
+                    const savedUser = await User.create({
+                        username: username, 
+                        email: email, 
+                        password: password,
+                        profile: [savedProfile._id],
+                        csrfTokenSecret: [savedCSRFTokenSecret._id],
+                        forgotPassword: false
                     });
 
-                    csrfTokenSecretObj.save()
-                        .then(async savedCSRFTokenSecret => {
-                            let profileObj = new Profile({
-                                fullName: fullName,
-                                profilePicture: 'https://res.cloudinary.com/dgo6vnzjl/image/upload/c_fill,q_50,w_150/v1685085963/default_male_avatar_xkpekq.webp' 
+                    CSRFTokenSecret.findByIdAndUpdate(savedCSRFTokenSecret._id, { user_id: savedUser._id }, (error, docs) => {});
+                    Profile.findByIdAndUpdate(savedProfile._id, { user_id: savedUser._id }, (error, docs) => {});
+                    User.findById(savedUser._id).populate('profile').populate('csrfTokenSecret').exec()
+                        .then(foundUser => {
+                            foundUser.password = undefined;
+                            let accessToken = jwt.sign(foundUser.toJSON(), process.env.ACCESS_TOKEN_SECRET, {expiresIn: jwtTokensSettings.JWT_ACCESS_TOKEN_EXPIRATION_STRING});
+                            
+                            res.cookie('access_token', accessToken, { 
+                                httpOnly: true, 
+                                secure: true, 
+                                sameSite: 'strict', 
+                                path: '/', 
+                                expires: new Date(new Date().getTime() + cookiesSettings.COOKIE_ACCESS_TOKEN_EXPIRATION)
                             });
-        
-                            profileObj.save()
-                                .then(async savedProfile => {
-                                    const user = User({ 
-                                        username: username, 
-                                        email: email, 
-                                        password: password,
-                                        profile: [savedProfile._id],
-                                        csrfTokenSecret: [savedCSRFTokenSecret._id],
-                                        forgotPassword: false
-                                    });
-                                    
-                                    // THE USER WILL BE SAVED. BEFORE SAVING TO THE DATABASE
-                                    // THE USER WILL UNDER GO FIRST TO THE USER MODEL MONGOOSE VALIDATION WHICH IS FINAL VALIDATION
-                                    // THEN HASH THE PASSWORD THEN SAVE TO THE DATABASE
-                                    user.save()
-                                        .then(async savedUser => {
-                                            CSRFTokenSecret.findByIdAndUpdate(savedCSRFTokenSecret._id, { user_id: savedUser._id }, (error, docs) => {
-                                                if(error) {
-                                                    console.log({
-                                                        fileName: 'v1AuthenticationController.js',
-                                                        errorDescription: 'There is something problem on the server in searching csrf token secret and update.',
-                                                        errorLocation: 'activate',
-                                                        error: error,
-                                                        statusCode: 500
-                                                    });
-                                                    return res.status(500).json({status: 'error', error: 'There is something problem on the server in searching csrf token secret and update. Please try again later.'});
-                                                }else {
-                                                    Profile.findByIdAndUpdate(savedProfile._id, { user_id: savedUser._id }, (error, docs) => {
-                                                        if(error) {
-                                                            console.log({
-                                                                fileName: 'v1AuthenticationController.js',
-                                                                errorDescription: 'There is something problem on the server in searching profile and update.',
-                                                                errorLocation: 'activate',
-                                                                error: error,
-                                                                statusCode: 500
-                                                            });
-                                                            return res.status(500).json({status: 'error', error: 'There is something problem on the server in searching profile and update. Please try again later.'});
-                                                        }else{
-                                                            User.findById(savedUser._id) // return object only
-                                                                .populate('profile') // Populate the 'profile' field with the referenced profile documents
-                                                                .populate('csrfTokenSecret')
-                                                                .exec()
-                                                                .then(foundUser => {
-                                                                    foundUser.password = undefined;
-                                                                    let accessToken = jwt.sign(foundUser.toJSON(), process.env.ACCESS_TOKEN_SECRET, {expiresIn: process.env.ACCESS_TOKEN_EXPIRATION_STRING});
-                                                                    
-                                                                    res.cookie('access_token', accessToken, { 
-                                                                        httpOnly: true, 
-                                                                        secure: true, 
-                                                                        sameSite: 'strict', 
-                                                                        path: '/', 
-                                                                        expires: new Date(new Date().getTime() + JWT_ACCESS_TOKEN_EXPIRATION)
-                                                                    });
-        
-                                                                    res.cookie('csrf_token', csrfToken, { 
-                                                                        httpOnly: true, 
-                                                                        secure: true, 
-                                                                        sameSite: 'strict', 
-                                                                        path: '/', 
-                                                                        expires: new Date(new Date().getTime() + CSRF_TOKEN_EXPIRATION)
-                                                                    });
-        
-                                                                    return res.status(200).json({status: 'ok'});
-                                                                })
-                                                                .catch(error => {
-                                                                    console.log({
-                                                                        fileName: 'v1AuthenticationController.js',
-                                                                        errorDescription: 'There is something problem on the server in searching user.',
-                                                                        errorLocation: 'activate',
-                                                                        error: error,
-                                                                        statusCode: 500
-                                                                    });
-                                                                    return res.status(500).json({status: 'error', error: 'There is something problem on the server in searching user. Please try again later.'});
-                                                                });
-                                                        }
-                                                    });
-                                                }
-                                            })
-                                        })
-                                        .catch(error => {
-                                            console.log({
-                                                fileName: 'v1AuthenticationController.js',
-                                                errorDescription: 'There is something problem on the server in creating a user.',
-                                                errorLocation: 'activate',
-                                                error: error,
-                                                statusCode: 500
-                                            });
-                                            return res.status(500).json({status: 'error', error: 'There is something problem on the server in creating a user. Please try again later.'});
-                                        });
-                                })
-                                .catch(error => {
-                                    console.log({
-                                        fileName: 'v1AuthenticationController.js',
-                                        errorDescription: 'There is something problem on the server in creating a profile.',
-                                        errorLocation: 'activate',
-                                        error: error,
-                                        statusCode: 500
-                                    });
-                                    return res.status(500).json({status: 'error', error: 'There is something problem on the server in creating a profile. Please try again later.'});
-                                });
-                            // END CREATE CSRF TOKEN SECRET, CSRF TOKEN, PROFILE AND USER ACCOUNT, SAVE TO THE DATABASE, SEND A JWT TOKEN, AND SEND A CSRF TOKEN TO THE USER. NOTE! MONGOOSE MODEL WILL ALSO SANITIZE ALL THE USER INPUT AGAIN TO PREVENT NOSQL INJECTION ATTACK
-                        })
-                        .catch(error => {
-                            console.log({
-                                fileName: 'v1AuthenticationController.js',
-                                errorDescription: 'There is something problem on the server in creating a csrf token secret.',
-                                errorLocation: 'activate',
-                                error: error,
-                                statusCode: 500
+
+                            res.cookie('csrf_token', csrfToken, { 
+                                httpOnly: true, 
+                                secure: true, 
+                                sameSite: 'strict', 
+                                path: '/', 
+                                expires: new Date(new Date().getTime() + cookiesSettings.COOKIE_ACCESS_TOKEN_EXPIRATION)
                             });
-                            return res.status(500).json({status: 'error', error: 'There is something problem on the server in creating a profile. Please try again later.'});
-                        })
+
+                            return res.status(200).json({status: 'ok'});
+                        });
+                    // END CREATE CSRF TOKEN SECRET, CSRF TOKEN, PROFILE AND USER ACCOUNT, SAVE TO THE DATABASE, SEND A JWT TOKEN, AND SEND A CSRF TOKEN TO THE USER. NOTE! MONGOOSE MODEL WILL ALSO SANITIZE ALL THE USER INPUT AGAIN TO PREVENT NOSQL INJECTION ATTACK
                 }
             })
-        }else {
-            return res.status(401).json({status: 'error', error: 'No token.'});
         }
     }catch(error) {
-        console.log({
-            fileName: 'v1AuthenticationController.js',
-            errorDescription: 'There is something problem on the server.',
-            errorLocation: 'activate',
-            error: error,
-            statusCode: 500
-        });
-
-        return res.status(500).json({status: 'error', error: 'There is something problem on the server. Please try again later.'});
+        next(error);
     }
 }
 
-const login = async (req, res) => {
+const login = async (req, res, next) => {
     try {
         // STEP 1: SANITIZE THE USER INPUT TO PREVENT NOSQL INJECTION ATTACK AND CHECK IF ALL FIELDS ARE NOT EMPTY
         let {username, password} = mongoSanitize.sanitize(req.body);
 
-        let emptyFields = [];
-
-        if(!username) {
-            emptyFields.push('username');
-        }
-
-        if(!password) {
-            emptyFields.push('password');
-        }
-
-        if(emptyFields.length > 0) {
-            return res.status(400).json({status: 'fail', error: 'Please complete the Login Form.', emptyFields});
+        if(!username || !password) {
+            return next(new ErrorResponse(400, "Please provide username and password.", errorCodes.INCOMPLETE_LOGIN_FORM));
         }
         // END SANITIZE THE USER INPUT TO PREVENT NOSQL INJECTION ATTACK AND CHECK IF ALL FIELDS ARE NOT EMPTY
 
@@ -644,7 +462,7 @@ const login = async (req, res) => {
         const { error } = validationSchema.validate(req.body);
 
         if (error) {
-            return res.status(400).json({ status: 'fail', error: error.details[0].message });
+            return next(new ErrorResponse(400, error.details[0].message, errorCodes.INVALID_USER_INPUT_LOGIN));
         }
         // END VALIDATE USER INPUT
 
@@ -652,7 +470,7 @@ const login = async (req, res) => {
         const user = await User.findOne({ username }).populate('profile').populate('csrfTokenSecret'); // return object only
         
         if (!user) {
-            return res.status(401).json({status: 'fail', error: 'Invalid username.' });
+            return next(new ErrorResponse(401, 'Invalid username.', errorCodes.USERNAME_NOT_EXIST_LOGIN));
         }
         // END CHECK IF USERNAME IS EXIST - THE USERNAME MUST EXIST TO BE SUCCESSFULLY LOGIN
 
@@ -660,7 +478,7 @@ const login = async (req, res) => {
         const isMatched = await user.matchPasswords(password);
 
         if (!isMatched) {
-            return res.status(401).json({status: 'fail', error: 'Invalid password.' });
+            return next(new ErrorResponse(401, 'Invalid password.', errorCodes.PASSWORD_NOT_MATCH_LOGIN));
         }
         // END CHECK IF PASSWORD IS MATCH - THE PASSWORD MUST BE MATCH TO BE SUCCESSFULLY LOGIN
 
@@ -671,14 +489,14 @@ const login = async (req, res) => {
         
         user.password = undefined;
 
-        let accessToken = jwt.sign(user.toJSON(), process.env.ACCESS_TOKEN_SECRET, {expiresIn: process.env.ACCESS_TOKEN_EXPIRATION_STRING});
+        let accessToken = jwt.sign(user.toJSON(), process.env.ACCESS_TOKEN_SECRET, {expiresIn: jwtTokensSettings.JWT_ACCESS_TOKEN_EXPIRATION_STRING});
         
         res.cookie('access_token', accessToken, { 
             httpOnly: true, 
             secure: true, 
             sameSite: 'strict', 
             path: '/', 
-            expires: new Date(new Date().getTime() + JWT_ACCESS_TOKEN_EXPIRATION)
+            expires: new Date(new Date().getTime() + cookiesSettings.COOKIE_ACCESS_TOKEN_EXPIRATION)
         });
 
         res.cookie('csrf_token', csrfToken, { 
@@ -686,25 +504,17 @@ const login = async (req, res) => {
             secure: true, 
             sameSite: 'strict', 
             path: '/', 
-            expires: new Date(new Date().getTime() + CSRF_TOKEN_EXPIRATION)
+            expires: new Date(new Date().getTime() + cookiesSettings.COOKIE_ACCESS_TOKEN_EXPIRATION)
         });
 
         return res.status(200).json({status: 'ok', user: user});
         // END CREATE CSRF TOKEN BASED ON THE CURRENT USER CSRF TOKEN SECRET AND GRANT ACCESS THE USER AND GIVE JWT TOKEN AND CSRF TOKEN TO THE USER
     }catch(error) {
-        console.log({
-            fileName: 'v1AuthenticationController.js',
-            errorDescription: 'There is something problem on the server.',
-            errorLocation: 'login',
-            error: error,
-            statusCode: 500
-        });
-
-        return res.status(500).json({status: 'error', error: 'There is something problem on the server. Please try again later.'});
+        next(error);
     }
 }
 
-const logout = async (req, res) => {
+const logout = async (req, res, next) => {
     try {
         res.cookie('access_token', 'expiredtoken', {
             httpOnly: true,
@@ -714,41 +524,31 @@ const logout = async (req, res) => {
             expires: new Date(Date.now() + 10000)
         });
 
-        res.cookie('csrf_token', 'expiredtoken', {
-            httpOnly: true,
-            secure: true,
+        const tokens = new Tokens();
+        const csrfTokenSecret = process.env.PUBLIC_CSRF_TOKEN_SECRET;
+        const csrfToken = tokens.create(csrfTokenSecret);
+
+        res.cookie('csrf_token', csrfToken, { 
+            httpOnly: true, 
+            secure: true, 
             sameSite: 'strict', 
             path: '/', 
-            expires: new Date(Date.now() + 10000)
+            expires: new Date(new Date().getTime() + cookiesSettings.COOKIE_PUBLIC_CSRF_TOKEN_EXPIRATION)
         });
 
         return res.status(200).json({status: 'ok'});
     }catch(error) {
-        console.log({
-            fileName: 'v1AuthenticationController.js',
-            errorDescription: 'There is something problem on the server.',
-            errorLocation: 'logout',
-            error: error,
-            statusCode: 500
-        });
-
-        return res.status(500).json({status: 'error', error: 'There is something problem on the server. Please try again later.'});
+        next(error);
     }
 }
 
-const forgotPassword = async (req, res) => {
+const forgotPassword = async (req, res, next) => {
     try {
         // STEP 1: SANITIZE THE USER INPUT TO PREVENT NOSQL INJECTION ATTACK AND CHECK IF ALL FIELDS ARE NOT EMPTY
         let {email} = mongoSanitize.sanitize(req.body);
 
-        let emptyFields = [];
-
         if(!email) {
-            emptyFields.push('email');
-        }
-
-        if(emptyFields.length > 0) {
-            return res.status(400).json({ status: 'fail', error: 'Please complete the Recovery Account Form.', emptyFields});
+            return next(new ErrorResponse(400, "Please complete the Forgot Password Form.", errorCodes.INCOMPLETE_FORGOT_PASSWORD_FORM));
         }
         // END SANITIZE THE USER INPUT TO PREVENT NOSQL INJECTION ATTACK AND CHECK IF ALL FIELDS ARE NOT EMPTY
 
@@ -783,31 +583,20 @@ const forgotPassword = async (req, res) => {
         const { error } = validationSchema.validate({email});
 
         if (error) {
-            return res.status(400).json({ status: 'fail', error: error.details[0].message });
+            return next(new ErrorResponse(400, error.details[0].message, errorCodes.INVALID_USER_INPUT_FORGOT_PASSWORD));
         }
         // END VALIDATE USER INPUT
 
-        let user;
-
         // STEP 4: CHECK IF EMAIL IS NOT EXIST
-        try {
-            user = await User.findOne({ email }).populate('csrfTokenSecret');
+        let user = await User.findOne({ email }).populate('csrfTokenSecret');
 
-            if (!user) {
-                return res.status(400).json({ status: 'fail', error: 'Email is not exist.' });
-            }
-        }catch(error) {
-            return res.status(500).json({status: 'error', error: 'There is something problem on the server where an error occurred while checking the email. Please try again later.'});
+        if (!user) {
+            return next(new ErrorResponse(400, "Email is not exist.", errorCodes.EMAIL_NOT_EXIST_FORGOT_PASSWORD));
         }
         // END CHECK IF EMAIL IS NOT EXIST
 
         // STEP 5: SEND EMAIL TO THE USER TO RESET USER PASSWORD ACCOUNT
-
-        try {
-            await User.findOneAndUpdate({ email }, { forgotPassword: true });
-        }catch (error) {
-            return res.status(500).json({status: 'error', error: 'There is something problem on the server in updating the forgot password of the user. Please try again later.'});
-        }
+        await User.findOneAndUpdate({ email }, { forgotPassword: true });
 
         const tokens = new Tokens();
         const csrfTokenSecret = user.csrfTokenSecret.secret;
@@ -816,91 +605,55 @@ const forgotPassword = async (req, res) => {
         const ACCOUNT_RECOVERY_RESET_PASSWORD_CSRF_TOKEN = jwt.sign(
             {csrfToken}, 
             process.env.ACCOUNT_RECOVERY_RESET_PASSWORD_CSRF_TOKEN_SECRET, 
-            {expiresIn: process.env.ACCOUNT_RECOVERY_RESET_PASSWORD_CSRF_EXPIRES_IN_STRING}
+            {expiresIn: jwtTokensSettings.JWT_ACCOUNT_RECOVERY_RESET_PASSWORD_EXPIRES_IN_STRING}
         );
 
         const ACCOUNT_RECOVERY_RESET_PASSWORD_JWT_TOKEN = jwt.sign(
             {email}, 
             process.env.ACCOUNT_RECOVERY_RESET_PASSWORD_TOKEN_SECRET, 
-            {expiresIn: process.env.ACCOUNT_RECOVERY_RESET_PASSWORD_EXPIRES_IN_STRING}
+            {expiresIn: jwtTokensSettings.JWT_ACCOUNT_RECOVERY_RESET_PASSWORD_EXPIRES_IN_STRING}
         );
 
         const recoverAccountResetPasswordURL = `${process.env.REACT_URL}/reset-password/${ACCOUNT_RECOVERY_RESET_PASSWORD_JWT_TOKEN}/${ACCOUNT_RECOVERY_RESET_PASSWORD_CSRF_TOKEN}`;
-        const html = `
-            <h1>You can update your password to recover your account by clicking the link below</h1>
-            <hr />
-            <a href=${recoverAccountResetPasswordURL} clicktracking=off>${recoverAccountResetPasswordURL}</a>
-        `;
+        const html = emailTemplates.recoverAccountResetPasswordEmailTemplate(recoverAccountResetPasswordURL);
 
-        try {
-            await sendEmail({
-                to: email,
-                subject: "MERN with Auth - Recovery Account Reset Password",
-                text: "You can update your password to recover your account by clicking the link below",
-                html,
-            });
-
-            return res.status(200).json({ status: 'ok' });
-        } catch (error) {
-            console.log({
-                fileName: 'v1AuthenticationController.js',
-                errorDescription: 'There is something problem on the server in sending the email account recovery reset password.',
-                errorLocation: 'forgotPassword',
-                error: error,
-                statusCode: 500
-            });
-
-            return res.status(500).json({status: 'error', error: 'There is something problem on the server in sending the email account recovery reset password. Please try again later.'});
-        }
-        // END SEND EMAIL TO THE USER TO ACTIVATE USER ACCOUNT
-
-    }catch(error) {
-        console.log({
-            fileName: 'v1AuthenticationController.js',
-            errorDescription: 'There is something problem on the server.',
-            errorLocation: 'forgotPassword',
-            error: error,
-            statusCode: 500
+        await sendEmail({
+            to: email,
+            subject: "MERN with Auth - Recovery Account Reset Password",
+            text: "You can update your password to recover your account by clicking the link below",
+            html,
         });
 
-        return res.status(500).json({status: 'error', error: 'There is something problem on the server. Please try again later.'});
+        return res.status(200).json({ status: 'ok' });
+        // END SEND EMAIL TO THE USER TO ACTIVATE USER ACCOUNT
+    }catch(error) {
+        next(error);
     }
 }
 
-const resetPassword = async (req, res) => {
+const resetPassword = async (req, res, next) => {
     try {
         let { token, csrfToken, password, repeatPassword } = mongoSanitize.sanitize(req.body);
 
-        if(token && csrfToken) {
-            jwt.verify(token, process.env.ACCOUNT_RECOVERY_RESET_PASSWORD_TOKEN_SECRET, async (error, decoded) => {
+        if(!token || !csrfToken) {
+            return next(new ErrorResponse(401, "No JWT Token or CSRF Token.", errorCodes.NO_JWT_TOKEN_OR_CSRF_TOKEN_RESET_PASSWORD));
+        }else {
+            jwt.verify(csrfToken, process.env.ACCOUNT_RECOVERY_RESET_PASSWORD_CSRF_TOKEN_SECRET, async (error, decoded) => {
                 if(error) {
-                    return res.status(401).json({status: 'fail', error: 'Expired link or Invalid JWT Token. Please enter your email again.'});
+                    return next(new ErrorResponse(401, "Expired link or Invalid CSRF Token. Please enter your email again.", errorCodes.EXPIRED_LINK_OR_INVALID_CSRF_TOKEN_RESET_PASSWORD));
                 }else {
-                    jwt.verify(csrfToken, process.env.ACCOUNT_RECOVERY_RESET_PASSWORD_CSRF_TOKEN_SECRET, async (error, decoded) => {
+                    jwt.verify(token, process.env.ACCOUNT_RECOVERY_RESET_PASSWORD_TOKEN_SECRET, async (error, decoded) => {
                         if(error) {
-                            return res.status(401).json({status: 'fail', error: 'Expired link or Invalid CSRF Token. Please enter your email again.'});
+                            return next(new ErrorResponse(401, "Expired link or Invalid JWT Token. Please enter your email again.", errorCodes.EXPIRED_LINK_OR_INVALID_JWT_TOKEN_RESET_PASSWORD));
                         }else {
                             // STEP 1: SANITIZE THE USER INPUT TO PREVENT NOSQL INJECTION ATTACK AND CHECK IF ALL FIELDS ARE NOT EMPTY
-                            let { email } = mongoSanitize.sanitize(jwt.decode(token));
+                            let { email } = mongoSanitize.sanitize(decoded);
                             let csrfTokenObj = jwt.decode(csrfToken);
-                            
-                            let emptyFields = [];
-            
-                            if(!email) {
-                                emptyFields.push('email');
+
+                            if(!email || !password || !repeatPassword) {
+                                return next(new ErrorResponse(400, "Please complete the Recovery Account Reset Password Form.", errorCodes.INCOMPLETE_RESET_PASSWORD_FORM));
                             }
-            
-                            if(!password) {
-                                emptyFields.push('password');
-                            }
-            
-                            if(!repeatPassword) {
-                                emptyFields.push('repeatPassword');
-                            }
-            
-                            if(emptyFields.length > 0) {
-                                return res.status(400).json({ status: 'fail', error: 'Please complete the Recovery Account Reset Password Form.', emptyFields});
-                            }
+
                             // END SANITIZE THE USER INPUT TO PREVENT NOSQL INJECTION ATTACK AND CHECK IF ALL FIELDS ARE NOT EMPTY
             
                             // STEP 2: SANITIZE THE USER INPUT TO PREVENT XSS ATTACK
@@ -963,95 +716,63 @@ const resetPassword = async (req, res) => {
                             const { error } = validationSchema.validate({email, password, repeatPassword});
             
                             if (error) {
-                                return res.status(400).json({ status: 'fail', error: error.details[0].message });
+                                return next(new ErrorResponse(400, error.details[0].message, errorCodes.INVALID_USER_INPUT_RESET_PASSWORD));
                             }
                             // END VALIDATE USER INPUT
             
-                            // STEP 4: CHECK IF EMAIL IS NOT EXIST
-                            let user; 
-
-                            try {
-                                user = await User.findOne({ email }).populate('csrfTokenSecret');
+                            // STEP 4: CHECK IF EMAIL IS EXIST
+                            let user = await User.findOne({ email }).populate('csrfTokenSecret');
             
-                                if (!user) {
-                                    return res.status(400).json({ status: 'fail', error: 'Email is not exist.' });
-                                }
-                            }catch(error) {
-                                return res.status(500).json({status: 'error', error: 'There is something problem on the server where an error occurred while checking the email. Please try again later.'});
+                            if (!user) {
+                                return next(new ErrorResponse(400, "Email is not exist.", errorCodes.EMAIL_NOT_EXIST_RESET_PASSWORD));
                             }
-                            // END CHECK IF EMAIL IS NOT EXIST
+                            // END CHECK IF EMAIL IS EXIST
             
                             const tokens = new Tokens();
 
                             if (!tokens.verify(user.csrfTokenSecret.secret, csrfTokenObj.csrfToken)) {
                                 // THE USER HAS CSRF TOKEN BUT INVALID 
-                                return res.status(403).json({status: 'error', error: 'You are forbidden. Invalid CSRF token.'});
+                                return next(new ErrorResponse(403, "You are forbidden. Invalid CSRF token.", errorCodes.INVALID_CSRF_TOKEN_RESET_PASSWORD));
                             }
 
                             // STEP 5: UPDATE THE PASSWORD OF THE USER
-                            try {
-                                const hashedPassword = await argon2.hash(password);
-                                const user = await User.findOneAndUpdate({ email }, { password: hashedPassword, forgotPassword: false });
-                                if (user) {
-                                    return res.status(200).json({ status: 'ok'});
-                                }
-                            }catch(error) {
-                                console.log({
-                                    fileName: 'v1AuthenticationController.js',
-                                    errorDescription: 'There is something problem on the server where an error occurred while checking the email and update the password.',
-                                    errorLocation: 'resetPassword',
-                                    error: error,
-                                    statusCode: 500
-                                });
-            
-                                return res.status(500).json({status: 'error', error: 'There is something problem on the server where an error occurred while checking the email and update the password. Please try again later.'});
+                            const hashedPassword = await argon2.hash(password);
+                            user = await User.findOneAndUpdate({ email }, { password: hashedPassword, forgotPassword: false });
+                            if (user) {
+                                return res.status(200).json({ status: 'ok'});
                             }
                             // END UPDATE THE PASSWORD OF THE USER
                         }
                     });
                 }
             });
-        }else {
-            return res.status(401).json({status: 'error', error: 'No token.'});
         }
     }catch(error) {
-        console.log({
-            fileName: 'v1AuthenticationController.js',
-            errorDescription: 'There is something problem on the server.',
-            errorLocation: 'resetPassword',
-            error: error,
-            statusCode: 500
-        });
-
-        return res.status(500).json({status: 'error', error: 'There is something problem on the server. Please try again later.'});
+        next(error);
     }
 };
 
-const accountRecoveryResetPasswordVerifyToken = async (req, res) => {
+const accountRecoveryResetPasswordVerifyToken = async (req, res, next) => {
     try {
         const { token, csrfToken } = req.body;
 
-        if(token && csrfToken) {
-            jwt.verify(token, process.env.ACCOUNT_RECOVERY_RESET_PASSWORD_TOKEN_SECRET, async (error, decoded) => {
+        if(!token || !csrfToken) {
+            return next(new ErrorResponse(401, "No JWT Token or CSRF Token.", errorCodes.NO_JWT_TOKEN_OR_CSRF_TOKEN_ACCOUNT_RECOVERY_RESET_PASSWORD_VERIFY_TOKEN));
+        }else {
+            jwt.verify(csrfToken, process.env.ACCOUNT_RECOVERY_RESET_PASSWORD_CSRF_TOKEN_SECRET, async (error, decoded) => {
                 if(error) {
-                    return res.status(401).json({status: 'fail', error: 'Expired link or Invalid JWT Token. Please enter your email again.'});
+                    return next(new ErrorResponse(401, "Expired link or Invalid CSRF Token. Please enter your email again.", errorCodes.EXPIRED_LINK_OR_INVALID_CSRF_TOKEN_ACCOUNT_RECOVERY_RESET_PASSWORD_VERIFY_TOKEN));
                 }else {
-                    jwt.verify(csrfToken, process.env.ACCOUNT_RECOVERY_RESET_PASSWORD_CSRF_TOKEN_SECRET, async (error, decoded) => {
+                    jwt.verify(token, process.env.ACCOUNT_RECOVERY_RESET_PASSWORD_TOKEN_SECRET, async (error, decoded) => {
                         if(error) {
-                            return res.status(401).json({status: 'fail', error: 'Expired link or Invalid CSRF Token. Please enter your email again.'});
+                            return next(new ErrorResponse(401, "Expired link or Invalid JWT Token. Please enter your email again.", errorCodes.EXPIRED_LINK_OR_INVALID_JWT_TOKEN_ACCOUNT_RECOVERY_RESET_PASSWORD_VERIFY_TOKEN));
                         }else {
                             // STEP 1: SANITIZE THE USER INPUT TO PREVENT NOSQL INJECTION ATTACK AND CHECK IF ALL FIELDS ARE NOT EMPTY
                             let { email } = mongoSanitize.sanitize(jwt.decode(token));
                             let csrfTokenObj = mongoSanitize.sanitize(jwt.decode(csrfToken));
 
-                            let emptyFields = [];
-
                             if(!email) {
-                                emptyFields.push('email');
-                            }
-
-                            if(emptyFields.length > 0) {
-                                return res.status(400).json({ status: 'fail', error: 'Please complete the Recovery Account Form.', emptyFields});
+                                return next(new ErrorResponse(400, "Please complete the Forgot Password Form.", errorCodes.INCOMPLETE_FORGOT_PASSWORD_FORM_ACCOUNT_RECOVERY_RESET_PASSWORD_VERIFY_TOKEN));
                             }
                             // END SANITIZE THE USER INPUT TO PREVENT NOSQL INJECTION ATTACK AND CHECK IF ALL FIELDS ARE NOT EMPTY
 
@@ -1086,37 +807,22 @@ const accountRecoveryResetPasswordVerifyToken = async (req, res) => {
                             const { error } = validationSchema.validate({email});
 
                             if (error) {
-                                return res.status(400).json({ status: 'fail', error: error.details[0].message });
+                                return next(new ErrorResponse(400, error.details[0].message, errorCodes.INVALID_USER_INPUT_FORGOT_PASSWORD_ACCOUNT_RECOVERY_RESET_PASSWORD_VERIFY_TOKEN));
                             }
                             // END VALIDATE USER INPUT
 
                             // STEP 4: CHECK IF EMAIL IS EXIST AND FORGOT PASSWORD
-                            let user;
+                            let user = await User.findOne({ email, forgotPassword: true }).populate('csrfTokenSecret');
 
-                            try {
-                                user = await User.findOne({ email, forgotPassword: true }).populate('csrfTokenSecret');
-
-                                if (!user) {
-                                    return res.status(400).json({ status: 'fail', error: 'Email is not exist or user does not request forgot password.' });
-                                }
-                            }catch(error) {
-                                console.log({
-                                    fileName: 'v1AuthenticationController.js',
-                                    errorDescription: 'There is something problem on the server where an error occurred while checking the email. Please try again later.',
-                                    errorLocation: 'accountRecoveryResetPasswordVerifyToken',
-                                    error: error,
-                                    statusCode: 500
-                                });
-
-                                return res.status(500).json({status: 'error', error: 'There is something problem on the server where an error occurred while checking the email. Please try again later.'});
+                            if (!user) {
+                                return next(new ErrorResponse(400, "Email is not exist or user does not request forgot password.", errorCodes.EMAIL_NOT_EXIST_OR_USER_NOT_REQUEST_FORGOT_PASSWORD_ACCOUNT_RECOVERY_RESET_PASSWORD_VERIFY_TOKEN));
                             }
                             // END CHECK IF EMAIL IS EXIST AND FORGOT PASSWORD
-
                             const tokens = new Tokens();
 
                             if (!tokens.verify(user.csrfTokenSecret.secret, csrfTokenObj.csrfToken)) {
                                 // THE USER HAS CSRF TOKEN BUT INVALID 
-                                return res.status(403).json({status: 'error', error: 'You are forbidden. Invalid CSRF token.'});
+                                return next(new ErrorResponse(403, "You are forbidden. Invalid CSRF token.", errorCodes.INVALID_CSRF_TOKEN_ACCOUNT_RECOVERY_RESET_PASSWORD_VERIFY_TOKEN));
                             }
 
                             return res.status(200).json({ status: 'ok' });
@@ -1124,19 +830,9 @@ const accountRecoveryResetPasswordVerifyToken = async (req, res) => {
                     });
                 }
             })
-        }else {
-            return res.status(401).json({status: 'error', error: 'No token.'});
         }
     }catch(error) {
-        console.log({
-            fileName: 'v1AuthenticationController.js',
-            errorDescription: 'There is something problem on the server.',
-            errorLocation: 'accountRecoveryResetPasswordVerifyToken',
-            error: error,
-            statusCode: 500
-        });
-
-        return res.status(500).json({status: 'error', error: 'There is something problem on the server. Please try again later.'});
+        next(error);
     }
 }
 

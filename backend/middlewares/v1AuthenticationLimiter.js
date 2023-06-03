@@ -8,7 +8,7 @@ const userLimiter = rateLimit({
       expireTimeMs: 60 * 1000, // Time window in milliseconds
       errorHandler: console.error, // Optional error handler
     }),
-    max: 5, // Maximum number of requests per time window
+    max: 100, // Maximum number of requests per time window
     message: 'Too many user requests, please try again later.',
 });
 
@@ -19,7 +19,7 @@ const loginLimiter = rateLimit({
       expireTimeMs: 60 * 1000, // Time window in milliseconds
       errorHandler: console.error, // Optional error handler
     }),
-    max: 5, // Maximum number of requests per time window
+    max: 100, // Maximum number of requests per time window
     message: 'Too many login requests, please try again later.',
 });
 
@@ -30,7 +30,7 @@ const registerLimiter = rateLimit({
       expireTimeMs: 60 * 1000, // Time window in milliseconds
       errorHandler: console.error, // Optional error handler
     }),
-    max: 5, // Maximum number of requests per time window
+    max: 100, // Maximum number of requests per time window
     message: 'Too many register requests, please try again later.',
 });
 
@@ -41,7 +41,7 @@ const activateLimiter = rateLimit({
       expireTimeMs: 60 * 1000, // Time window in milliseconds
       errorHandler: console.error, // Optional error handler
     }),
-    max: 5, // Maximum number of requests per time window
+    max: 100, // Maximum number of requests per time window
     message: 'Too many activate requests, please try again later.',
 });
 
@@ -52,7 +52,7 @@ const forgotPasswordLimiter = rateLimit({
       expireTimeMs: 60 * 1000, // Time window in milliseconds
       errorHandler: console.error, // Optional error handler
     }),
-    max: 5, // Maximum number of requests per time window
+    max: 100, // Maximum number of requests per time window
     message: 'Too many forgot password requests, please try again later.',
 });
 
@@ -63,7 +63,7 @@ const resetPasswordLimiter = rateLimit({
       expireTimeMs: 60 * 1000, // Time window in milliseconds
       errorHandler: console.error, // Optional error handler
     }),
-    max: 5, // Maximum number of requests per time window
+    max: 100, // Maximum number of requests per time window
     message: 'Too many reset password requests, please try again later.',
 });
 
@@ -74,7 +74,7 @@ const resetPasswordVerifyTokenLimiter = rateLimit({
       expireTimeMs: 60 * 1000, // Time window in milliseconds
       errorHandler: console.error, // Optional error handler
     }),
-    max: 5, // Maximum number of requests per time window
+    max: 100, // Maximum number of requests per time window
     message: 'Too many reset password verify token requests, please try again later.',
 });
 
@@ -85,7 +85,7 @@ const logoutLimiter = rateLimit({
       expireTimeMs: 60 * 1000, // Time window in milliseconds
       errorHandler: console.error, // Optional error handler
     }),
-    max: 5, // Maximum number of requests per time window
+    max: 100, // Maximum number of requests per time window
     message: 'Too many logout requests, please try again later.',
 });
 

@@ -1,14 +1,20 @@
 require('dotenv').config();
+const path = require("path");
 const express = require('express');
 const app = express();
 const mongoose = require('mongoose');
 const cors = require('cors');
-const PORT = process.env.PORT || 4000;
-const v1AuthenticationRouter = require('./routes/v1AuthenticationRouter');
 const cookieParser = require('cookie-parser');
-const mongoSanitize = require('express-mongo-sanitize'); // FOR NOSQL INJECTION PROTECTION IN REGISTER AND LOGIN PURPOSES
+const mongoSanitize = require('express-mongo-sanitize');
 const helmet = require('helmet');
-const Tokens = require('csrf');
+
+// ------------ ROUTERS --------------------
+const v1AuthenticationRouter = require('./routes/v1AuthenticationRouter');
+// ------------ ROUTERS --------------------
+
+// ------------ MIDDLEWARES --------------------
+const errorHandler = require('./middlewares/errorHandler');
+// ------------ MIDDLEWARES --------------------
 
 mongoose.set('strictQuery', false);
 app.use(helmet({
@@ -45,13 +51,13 @@ app.use(helmet({
     featurePolicy: {
         features: {
           fullscreen: ["'self'"],
-          camera: ["'none'"],
-          microphone: ["'none'"]
+          camera: ["'self'"],
+          microphone: ["'self'"]
         }
     }
 }));
 app.use(express.json());
-app.use(mongoSanitize()); // USER INPUT SANITIZATION AGAINST NOSQL QUERY INJECTION ATTACKS
+app.use(mongoSanitize());
 app.use(cookieParser());
 app.use(
   cors({
@@ -63,16 +69,29 @@ app.use(
 
 app.use('/api/v1/authentication', v1AuthenticationRouter);
 
+// -------------------------- DEPLOYMENT ------------------------------
+if (process.env.NODE_ENV === "PRODUCTION") {
+    app.use(express.static(path.join(__dirname, "../frontend/build")));
+    app.get("*", (req, res) => {
+      return res.sendFile(
+        path.resolve(__dirname, "client", "build", "index.html")
+      );
+    });
+};
+// -------------------------- DEPLOYMENT ------------------------------
+
+app.use(errorHandler);
+
 mongoose.connect(process.env.MONGO_DB_URI, {
     useNewUrlParser: true,
     useUnifiedTopology: true,
 })
 .then(() => {
-    app.listen(PORT, () => {
-        console.log(`File: server.js - Listening on ${PORT}`);
+    app.listen(process.env.PORT, () => {
+        console.log(`File: server.js - Listening on ${process.env.PORT}`);
     });
 })
-.catch((err) => {
-    console.log(`File: server.js - ${err}`);
+.catch((error) => {
+    console.log(`File: server.js - ${error}`);
     mongoose.disconnect();
 });

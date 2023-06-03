@@ -12,8 +12,6 @@ const ResetPassword = () => {
     const { token, csrfToken } = useParams();
     const [isAccountRecoveryResetPasswordTokenValid, setIsAccountRecoveryResetPasswordTokenValid] = useState(false);
 
-    console.log(csrfToken);
-
     const initialValues = {
         password: '',
         repeatPassword: ''

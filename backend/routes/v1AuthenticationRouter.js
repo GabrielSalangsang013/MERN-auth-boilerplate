@@ -1,9 +1,18 @@
 require('dotenv').config();
 const express = require('express');
 const router = express.Router();
-const v1AuthenticationController = require('../controllers/v1AuthenticationController');
 const jwt = require('jsonwebtoken');
-var Tokens = require('csrf');
+const Tokens = require('csrf');
+
+// ------------ CONTROLLERS --------------------
+const v1AuthenticationController = require('../controllers/v1AuthenticationController');
+// ------------ CONTROLLERS --------------------
+
+// ------------ CONSTANTS --------------------
+const cookiesSettings = require('../constants/v1AuthenticationCookiesSettings');
+// ------------ CONSTANTS --------------------
+
+// ------------ MIDDLEWARES --------------------
 const {
     userLimiter,
     loginLimiter,
@@ -13,45 +22,11 @@ const {
     resetPasswordLimiter,
     resetPasswordVerifyTokenLimiter,
     logoutLimiter
-} = require('../utils/v1AuthenticationLimiter');
+} = require('../middlewares/v1AuthenticationLimiter');
 
-const PUBLIC_CSRF_TOKEN_EXPIRATION = 60 * 1000;
-
-function publicVerifyCSRFToken(req, res, next) {
-    const csrfToken = req.cookies.csrf_token;
-    const tokens = new Tokens();
-
-    if (csrfToken == null) {
-        // THE USER HAS NO CSRF TOKEN
-        return res.status(401).json({status: 'error', error: 'You are unauthorized user.'});
-    }
-
-    if (!tokens.verify(process.env.PUBLIC_CSRF_TOKEN_SECRET, csrfToken)) {
-        // THE USER HAS CSRF TOKEN BUT INVALID 
-        return res.status(403).json({status: 'error', error: 'You are forbidden. Invalid CSRF token.'});
-    }
-
-    next();
-}
-
-function authenticateToken(req, res, next) {
+function authenticateJWTToken(req, res, next) {
     const token = req.cookies.access_token;
-    const csrfToken = req.cookies.csrf_token;
-
-    if (csrfToken == null) {
-        const tokens = new Tokens();
-        const csrfTokenSecret = process.env.PUBLIC_CSRF_TOKEN_SECRET;
-        const csrfToken = tokens.create(csrfTokenSecret);
-
-        res.cookie('csrf_token', csrfToken, { 
-            httpOnly: true, 
-            secure: true, 
-            sameSite: 'strict', 
-            path: '/', 
-            expires: new Date(new Date().getTime() + PUBLIC_CSRF_TOKEN_EXPIRATION)
-        });
-    }
-
+    
     if (token == null) {
         // THE USER HAS NO JWT TOKEN
         return res.status(401).json({status: 'error', error: 'You are unauthorized user.'});
@@ -87,15 +62,55 @@ function verifyPrivateCSRFToken(req, res, next) {
     next();
 }
 
+function verifyPublicCSRFToken(req, res, next) {
+    const csrfToken = req.cookies.csrf_token;
+    const tokens = new Tokens();
+
+    if (csrfToken == null) {
+        // THE USER HAS NO CSRF TOKEN
+        return res.status(401).json({status: 'error', error: 'You are unauthorized user.'});
+    }
+
+    if (!tokens.verify(process.env.PUBLIC_CSRF_TOKEN_SECRET, csrfToken)) {
+        // THE USER HAS CSRF TOKEN BUT INVALID 
+        return res.status(403).json({status: 'error', error: 'You are forbidden. Invalid CSRF token.'});
+    }
+
+    next();
+}
+
+function sendPublicCSRFTokenToUser(req, res, next) {
+    // IF USER DON'T HAVE CSRF TOKEN, THE USER WILL RECEIVE PUBLIC CSRF TOKEN
+    const csrfToken = req.cookies.csrf_token;
+
+    if (csrfToken == null) {
+        const tokens = new Tokens();
+        const csrfTokenSecret = process.env.PUBLIC_CSRF_TOKEN_SECRET;
+        const csrfToken = tokens.create(csrfTokenSecret);
+
+        res.cookie('csrf_token', csrfToken, { 
+            httpOnly: true, 
+            secure: true, 
+            sameSite: 'strict', 
+            path: '/', 
+            expires: new Date(new Date().getTime() + cookiesSettings.COOKIE_PUBLIC_CSRF_TOKEN_EXPIRATION)
+        });
+    }
+
+    next();
+}
+// ------------ MIDDLEWARES --------------------
+
+
 // API THAT VERIFY PUBLIC CSRF TOKEN
-router.post('/register', registerLimiter, publicVerifyCSRFToken, v1AuthenticationController.register);
-router.post('/login', loginLimiter, publicVerifyCSRFToken, v1AuthenticationController.login);
-router.post('/activate', activateLimiter, publicVerifyCSRFToken, v1AuthenticationController.activate);
-router.post('/forgot-password', forgotPasswordLimiter, publicVerifyCSRFToken, v1AuthenticationController.forgotPassword);
+router.post('/register', registerLimiter, verifyPublicCSRFToken, v1AuthenticationController.register);
+router.post('/login', loginLimiter, verifyPublicCSRFToken, v1AuthenticationController.login);
+router.post('/activate', activateLimiter, verifyPublicCSRFToken, v1AuthenticationController.activate);
+router.post('/forgot-password', forgotPasswordLimiter, verifyPublicCSRFToken, v1AuthenticationController.forgotPassword);
 
 // API THAT VERIFY PRIVATE CSRF TOKEN
-router.get('/user', userLimiter, authenticateToken, verifyPrivateCSRFToken, v1AuthenticationController.user); // USER MUST BE AUTHETICATED
-router.post('/logout', logoutLimiter, authenticateToken, verifyPrivateCSRFToken, v1AuthenticationController.logout); // USER MUST BE AUTHETICATED
+router.get('/user', userLimiter, sendPublicCSRFTokenToUser, authenticateJWTToken, verifyPrivateCSRFToken, v1AuthenticationController.user); // USER MUST BE AUTHETICATED
+router.post('/logout', logoutLimiter, sendPublicCSRFTokenToUser, authenticateJWTToken, verifyPrivateCSRFToken, v1AuthenticationController.logout); // USER MUST BE AUTHETICATED
 
 // API THAT VERIFY PRIVATE CSRF TOKEN VIA REQUEST BODY
 router.post('/reset-password', resetPasswordLimiter, v1AuthenticationController.resetPassword);
