@@ -354,33 +354,30 @@ const activate = tryCatch(async (req, res) => {
 
                 CSRFTokenSecret.findByIdAndUpdate(savedCSRFTokenSecret._id, { user_id: savedUser._id }, (error, docs) => {});
                 Profile.findByIdAndUpdate(savedProfile._id, { user_id: savedUser._id }, (error, docs) => {});
-                User.findById(savedUser._id).exec()
-                    .then(foundUser => {
+                
+                dataToRemoveInsideUserJWTToken.forEach(eachDataToRemove => {
+                    savedUser[eachDataToRemove] = undefined;
+                });
 
-                        dataToRemoveInsideUserJWTToken.forEach(eachDataToRemove => {
-                            foundUser[eachDataToRemove] = undefined;
-                        });
+                let accessToken = jwt.sign(savedUser.toJSON(), process.env.ACCESS_TOKEN_SECRET, {expiresIn: jwtTokensSettings.JWT_ACCESS_TOKEN_EXPIRATION_STRING});
+                
+                res.cookie('access_token', accessToken, { 
+                    httpOnly: true, 
+                    secure: true, 
+                    sameSite: 'strict', 
+                    path: '/', 
+                    expires: new Date(new Date().getTime() + cookiesSettings.COOKIE_ACCESS_TOKEN_EXPIRATION)
+                });
 
-                        let accessToken = jwt.sign(foundUser.toJSON(), process.env.ACCESS_TOKEN_SECRET, {expiresIn: jwtTokensSettings.JWT_ACCESS_TOKEN_EXPIRATION_STRING});
-                        
-                        res.cookie('access_token', accessToken, { 
-                            httpOnly: true, 
-                            secure: true, 
-                            sameSite: 'strict', 
-                            path: '/', 
-                            expires: new Date(new Date().getTime() + cookiesSettings.COOKIE_ACCESS_TOKEN_EXPIRATION)
-                        });
+                res.cookie('csrf_token', csrfToken, { 
+                    httpOnly: true, 
+                    secure: true, 
+                    sameSite: 'strict', 
+                    path: '/', 
+                    expires: new Date(new Date().getTime() + cookiesSettings.COOKIE_ACCESS_TOKEN_EXPIRATION)
+                });
 
-                        res.cookie('csrf_token', csrfToken, { 
-                            httpOnly: true, 
-                            secure: true, 
-                            sameSite: 'strict', 
-                            path: '/', 
-                            expires: new Date(new Date().getTime() + cookiesSettings.COOKIE_ACCESS_TOKEN_EXPIRATION)
-                        });
-
-                        return res.status(200).json({status: 'ok'});
-                    });
+                return res.status(200).json({status: 'ok'});
                 // END CREATE CSRF TOKEN SECRET, CSRF TOKEN, PROFILE AND USER ACCOUNT, SAVE TO THE DATABASE, SEND A JWT TOKEN, AND SEND A CSRF TOKEN TO THE USER. NOTE! MONGOOSE MODEL WILL ALSO SANITIZE ALL THE USER INPUT AGAIN TO PREVENT NOSQL INJECTION ATTACK
             }
         })
