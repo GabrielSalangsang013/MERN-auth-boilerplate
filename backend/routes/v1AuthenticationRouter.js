@@ -15,7 +15,7 @@ const v1AuthenticationController = require('../controllers/v1AuthenticationContr
 // ------------ CONSTANTS --------------------
 const cookiesSettings = require('../constants/v1AuthenticationCookiesSettings'); // ALL COOKIES SETTINGS
 const errorCodes = require('../constants/v1AuthenticationErrorCodes'); // ALL ERROR CODES
-const {dataToRemoveToStoreInRequestDotUser} = require('../constants/v1AuthenticationUserSettings'); // // DATA YOU DON'T WANT TO DELETE WHEN USER IS AUTHENTICATED
+const {dataToRemoveRequestUser} = require('../constants/v1AuthenticationUserSettings'); // // DATA YOU DON'T WANT TO DELETE WHEN USER IS AUTHENTICATED
 // ------------ CONSTANTS --------------------
 
 // ------------ MIDDLEWARES --------------------
@@ -144,7 +144,7 @@ function verifyPrivateCSRFToken(req, res, next) {
         return res.status(403).json({message: 'You are forbidden. Invalid CSRF token.', errorCode: errorCodes.INVALID_CSRF_TOKEN_VERIFY_PRIVATE_CSRF_TOKEN});
     }
 
-    dataToRemoveToStoreInRequestDotUser.forEach(eachDataToRemove => {
+    dataToRemoveRequestUser.forEach(eachDataToRemove => {
         req.user[eachDataToRemove] = undefined;
     });
 

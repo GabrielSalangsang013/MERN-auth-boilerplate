@@ -24,7 +24,7 @@ const emailTemplates = require('../constants/v1AuthenticationEmailTemplates'); /
 const errorCodes = require('../constants/v1AuthenticationErrorCodes'); // ALL ERROR CODES
 const cookiesSettings = require('../constants/v1AuthenticationCookiesSettings'); // ALL COOKIES SETTINGS
 const jwtTokensSettings = require('../constants/v1AuthenticationJWTTokensSettings'); // ALL JWT TOKEN SETTINGS
-const {dataToRemoveToStoreInJWTToken} = require('../constants/v1AuthenticationUserSettings'); // // DATA YOU DON'T WANT TO DELETE WHEN USER IS AUTHENTICATED
+const {dataToRemoveInsideUserJWTToken} = require('../constants/v1AuthenticationUserSettings'); // // DATA YOU DON'T WANT TO DELETE WHEN USER IS AUTHENTICATED
 // ----------------- CONSTANTS -----------------
 
 const user = tryCatch(async (req, res) => {    
@@ -354,10 +354,10 @@ const activate = tryCatch(async (req, res) => {
 
                 CSRFTokenSecret.findByIdAndUpdate(savedCSRFTokenSecret._id, { user_id: savedUser._id }, (error, docs) => {});
                 Profile.findByIdAndUpdate(savedProfile._id, { user_id: savedUser._id }, (error, docs) => {});
-                User.findById(savedUser._id).populate('profile').populate('csrfTokenSecret').exec()
+                User.findById(savedUser._id).exec()
                     .then(foundUser => {
 
-                        dataToRemoveToStoreInJWTToken.forEach(eachDataToRemove => {
+                        dataToRemoveInsideUserJWTToken.forEach(eachDataToRemove => {
                             foundUser[eachDataToRemove] = undefined;
                         });
 
@@ -480,11 +480,9 @@ const login = tryCatch(async (req, res) => {
     const csrfTokenSecret = user.csrfTokenSecret.secret;
     const csrfToken = tokens.create(csrfTokenSecret);
 
-    dataToRemoveToStoreInJWTToken.forEach(eachDataToRemove => {
+    dataToRemoveInsideUserJWTToken.forEach(eachDataToRemove => {
         user[eachDataToRemove] = undefined;
     });
-
-    console.log(user);
 
     let accessToken = jwt.sign(user.toJSON(), process.env.ACCESS_TOKEN_SECRET, {expiresIn: jwtTokensSettings.JWT_ACCESS_TOKEN_EXPIRATION_STRING});
     
