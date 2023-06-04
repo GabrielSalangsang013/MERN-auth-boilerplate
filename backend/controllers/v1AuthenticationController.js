@@ -24,6 +24,7 @@ const emailTemplates = require('../constants/v1AuthenticationEmailTemplates'); /
 const errorCodes = require('../constants/v1AuthenticationErrorCodes'); // ALL ERROR CODES
 const cookiesSettings = require('../constants/v1AuthenticationCookiesSettings'); // ALL COOKIES SETTINGS
 const jwtTokensSettings = require('../constants/v1AuthenticationJWTTokensSettings'); // ALL JWT TOKEN SETTINGS
+const {dataToRemoveToStoreInJWTToken} = require('../constants/v1AuthenticationUserSettings'); // // DATA YOU DON'T WANT TO DELETE WHEN USER IS AUTHENTICATED
 // ----------------- CONSTANTS -----------------
 
 const user = tryCatch(async (req, res) => {    
@@ -355,7 +356,11 @@ const activate = tryCatch(async (req, res) => {
                 Profile.findByIdAndUpdate(savedProfile._id, { user_id: savedUser._id }, (error, docs) => {});
                 User.findById(savedUser._id).populate('profile').populate('csrfTokenSecret').exec()
                     .then(foundUser => {
-                        foundUser.password = undefined;
+
+                        dataToRemoveToStoreInJWTToken.forEach(eachDataToRemove => {
+                            foundUser[eachDataToRemove] = undefined;
+                        });
+
                         let accessToken = jwt.sign(foundUser.toJSON(), process.env.ACCESS_TOKEN_SECRET, {expiresIn: jwtTokensSettings.JWT_ACCESS_TOKEN_EXPIRATION_STRING});
                         
                         res.cookie('access_token', accessToken, { 
@@ -455,7 +460,7 @@ const login = tryCatch(async (req, res) => {
     // END VALIDATE USER INPUT
 
     // STEP 4: CHECK IF USERNAME IS EXIST - THE USERNAME MUST EXIST TO BE SUCCESSFULLY LOGIN
-    const user = await User.findOne({ username }).populate('profile').populate('csrfTokenSecret'); // return object only
+    const user = await User.findOne({ username }).populate('csrfTokenSecret'); // return object only
     
     if (!user) {
         throw new ErrorResponse(401, 'Invalid username.', errorCodes.USERNAME_NOT_EXIST_LOGIN);
@@ -474,8 +479,12 @@ const login = tryCatch(async (req, res) => {
     const tokens = new Tokens();
     const csrfTokenSecret = user.csrfTokenSecret.secret;
     const csrfToken = tokens.create(csrfTokenSecret);
-    
-    user.password = undefined;
+
+    dataToRemoveToStoreInJWTToken.forEach(eachDataToRemove => {
+        user[eachDataToRemove] = undefined;
+    });
+
+    console.log(user);
 
     let accessToken = jwt.sign(user.toJSON(), process.env.ACCESS_TOKEN_SECRET, {expiresIn: jwtTokensSettings.JWT_ACCESS_TOKEN_EXPIRATION_STRING});
     

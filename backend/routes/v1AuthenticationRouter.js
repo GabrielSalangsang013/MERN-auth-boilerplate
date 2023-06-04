@@ -15,6 +15,7 @@ const v1AuthenticationController = require('../controllers/v1AuthenticationContr
 // ------------ CONSTANTS --------------------
 const cookiesSettings = require('../constants/v1AuthenticationCookiesSettings'); // ALL COOKIES SETTINGS
 const errorCodes = require('../constants/v1AuthenticationErrorCodes'); // ALL ERROR CODES
+const {dataToRemoveToStoreInRequestDotUser} = require('../constants/v1AuthenticationUserSettings'); // // DATA YOU DON'T WANT TO DELETE WHEN USER IS AUTHENTICATED
 // ------------ CONSTANTS --------------------
 
 // ------------ MIDDLEWARES --------------------
@@ -53,7 +54,7 @@ function authenticateJWTToken(req, res, next) {
         return res.status(401).json({message: 'You are unauthorized user.', errorCode: errorCodes.NO_JWT_TOKEN_AUTHENTICATE_JWT_TOKEN});
     }
 
-    jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (error, user) => {
+    jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, async (error, user) => {
         if (error) {
             // THE USER HAS JWT TOKEN BUT INVALID
             res.cookie('access_token', 'expiredtoken', {
@@ -80,13 +81,13 @@ function authenticateJWTToken(req, res, next) {
         }
 
         // CHECK IF HAS REQUIRED CLAIMS, OR MATCHES THE USER IN THE DATABASE
-        const checkUser = User.findById(user._id);
+        const checkUser = await User.findById(user._id).populate('profile').populate('csrfTokenSecret');
 
         if (!checkUser) {
             return res.status(404).json({message: "No user found inside JWT decoded.", errorCode: errorCodes.NO_USER_FOUND_IN_DATABASE_INSIDE_JWT_DECODED_TOKEN_AUTHENTICATE_JWT_TOKEN});
         }
 
-        req.user = user;
+        req.user = checkUser;
         next();
     });
 }
@@ -142,6 +143,10 @@ function verifyPrivateCSRFToken(req, res, next) {
         });
         return res.status(403).json({message: 'You are forbidden. Invalid CSRF token.', errorCode: errorCodes.INVALID_CSRF_TOKEN_VERIFY_PRIVATE_CSRF_TOKEN});
     }
+
+    dataToRemoveToStoreInRequestDotUser.forEach(eachDataToRemove => {
+        req.user[eachDataToRemove] = undefined;
+    });
 
     next();
 }
