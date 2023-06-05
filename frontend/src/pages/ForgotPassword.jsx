@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Formik, Form, Field, ErrorMessage } from 'formik';
 import { escape } from 'he';
 import * as Yup from 'yup';
@@ -77,7 +78,7 @@ const ForgotPassword = () => {
                     </div>
 
                     <br/>
-                    <button type="submit">Submit</button>
+                    <button type="submit">Submit</button> | <Link to='/login'>Login</Link> | <Link to='/register'>Register</Link>
                 </Form>
             </Formik>
         </>

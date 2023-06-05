@@ -1,15 +1,10 @@
 import { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
-import { useNavigate } from 'react-router-dom';
-import { useDispatch } from 'react-redux';
-import { successLoginAction } from './actions/login';
+import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
-axios.defaults.withCredentials = true;
 
 const AccountActivation = () => {
     const navigate = useNavigate();
     const { token } = useParams();
-    const dispatch = useDispatch();
     const [isActivating, setIsActivating] = useState(false);
 
     useEffect(() => {
@@ -21,8 +16,7 @@ const AccountActivation = () => {
                 if(response.status === 200 && response.data.status === 'ok') {
                     alert('You successfully activate your account');
                     setIsActivating(true);
-                    dispatch(successLoginAction())
-                    navigate('/');
+                    navigate('/home');
                 }
             })
             .catch(function (error) {

@@ -1,18 +1,12 @@
-import { useEffect } from 'react';
-import { useSelector, useDispatch } from 'react-redux';
-import { successLoginAction } from './actions/login';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { Formik, Form, Field, ErrorMessage } from 'formik';
 import { escape } from 'he';
 import * as Yup from 'yup';
 import DOMPurify from 'dompurify';  // FOR SANITIZING USER INPUT TO PREVENT XSS ATTACKS BEFORE SENDING TO THE BACKEND
 import axios from 'axios';
-axios.defaults.withCredentials = true;
 
 const Login = () => {
     const navigate = useNavigate();
-    const dispatch = useDispatch();
-    const isAuthenticated = useSelector((state) => state.isAuthenticated);
 
     const initialValues = {
         username: '',
@@ -54,16 +48,9 @@ const Login = () => {
     });
 
     const handleSubmit = (values) => {
-        // STEP 1: GET ALL THE INPUT VALUES THAT HAS BEEN SUCCESSFULLY PASSED TO VALIDATION
         const {username, password} = values;
-        // END GET ALL THE INPUT VALUES THAT HAS BEEN SUCCESSFULLY PASSED TO VALIDATION
-        
-        // STEP 2: SANITIZE THE USER INPUT TO PREVENT XSS ATTACK
         const sanitizedLoginUsername = DOMPurify.sanitize(username);
         const sanitizedLoginPassword = DOMPurify.sanitize(password);
-        // END SANITIZE THE USER INPUT TO PREVENT XSS ATTACK
-
-        // STEP 3: SEND THE SANITIZED INPUT TO THE BACKEND FOR THE LOGIN PURPOSES
         axios.post('http://localhost:4000/api/v1/authentication/login', {
             username: sanitizedLoginUsername,
             password: sanitizedLoginPassword
@@ -71,52 +58,37 @@ const Login = () => {
         .then((response) => {
             if(response.status === 200 && response.data.status === 'ok') {
                 alert('Successfully logged in.');
-                dispatch(successLoginAction());
-                navigate('/');
+                navigate('/home');
             } 
         })
         .catch(function (error) {
             alert(error.response.data.message);
         });
-        // END SEND THE SANITIZED INPUT TO THE BACKEND FOR THE LOGIN PURPOSES
     }
-
-    // IF USER IS ALREADY AUTHENTICATED. THE USER CANNOT NO LONGER VIEW THE LOGIN PAGE
-    useEffect(() => {
-        if(isAuthenticated) {
-            window.location.replace('/');
-        }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [])
-
-    if(isAuthenticated) {
-        return (
-            <></>
-        )
-    }
-    // END IF USER IS ALREADY AUTHENTICATED. THE USER CANNOT NO LONGER VIEW THE LOGIN PAGE
 
     return (
-        <Formik initialValues={initialValues} validationSchema={validationSchema} onSubmit={handleSubmit}>
-            <Form>
-                <h1>Login Form</h1>
+        <>
+            <Formik initialValues={initialValues} validationSchema={validationSchema} onSubmit={handleSubmit}>
+                <Form>
+                    <h1>Login Form</h1>
 
-                <div>
-                    <label htmlFor="username">Username: </label>
-                    <Field type="text" id="username" name="username" />
-                    <ErrorMessage name="username" component="div" />
-                </div>
+                    <div>
+                        <label htmlFor="username">Username: </label>
+                        <Field type="text" id="username" name="username" />
+                        <ErrorMessage name="username" component="div" />
+                    </div>
 
-                <div>
-                    <label htmlFor="password">Password: </label>
-                    <Field type="password" id="password" name="password" />
-                    <ErrorMessage name="password" component="div" />
-                </div>
-                
-                <br/>
-                <button type="submit">Login</button>
-            </Form>
-        </Formik>
+                    <div>
+                        <label htmlFor="password">Password: </label>
+                        <Field type="password" id="password" name="password" />
+                        <ErrorMessage name="password" component="div" />
+                    </div>
+                    
+                    <br/>
+                    <button type="submit">Login</button> | <Link to='/register'>Register</Link> | <Link to='/forgot-password'>Forgot Password</Link>
+                </Form>
+            </Formik>
+        </>
     )
 }
 

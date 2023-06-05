@@ -1,11 +1,9 @@
 import { useEffect, useState } from 'react';
-import { useParams } from "react-router-dom";
-import { useNavigate } from 'react-router-dom';
+import { useParams, useNavigate } from "react-router-dom";
 import { Formik, Form, Field, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
 import DOMPurify from 'dompurify';  // FOR SANITIZING USER INPUT TO PREVENT XSS ATTACKS BEFORE SENDING TO THE BACKEND
 import axios from 'axios';
-axios.defaults.withCredentials = true;
 
 const ResetPassword = () => {
     const navigate = useNavigate();
@@ -95,25 +93,27 @@ const ResetPassword = () => {
     }
 
     return (
-        <Formik initialValues={initialValues} validationSchema={validationSchema} onSubmit={handleSubmit}>
-            <Form>
-                <h1>Recovery Account Reset Password Form</h1>
-                <div>
-                    <label htmlFor="password">Password: </label>
-                    <Field type="password" id="password" name="password" />
-                    <ErrorMessage name="password" component="div" />
-                </div>
+        <>
+            <Formik initialValues={initialValues} validationSchema={validationSchema} onSubmit={handleSubmit}>
+                <Form>
+                    <h1>Recovery Account Reset Password Form</h1>
+                    <div>
+                        <label htmlFor="password">Password: </label>
+                        <Field type="password" id="password" name="password" />
+                        <ErrorMessage name="password" component="div" />
+                    </div>
 
-                <div>
-                    <label htmlFor="repeatPassword">Repeat Password: </label>
-                    <Field type="password" id="repeatPassword" name="repeatPassword" />
-                    <ErrorMessage name="repeatPassword" component="div" />
-                </div>
+                    <div>
+                        <label htmlFor="repeatPassword">Repeat Password: </label>
+                        <Field type="password" id="repeatPassword" name="repeatPassword" />
+                        <ErrorMessage name="repeatPassword" component="div" />
+                    </div>
 
-                <br/>
-                <button type="submit">Submit</button>
-            </Form>
-        </Formik>
+                    <br/>
+                    <button type="submit">Submit</button>
+                </Form>
+            </Formik>
+        </>
     )
 }
 

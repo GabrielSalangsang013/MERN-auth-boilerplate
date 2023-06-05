@@ -1,10 +1,10 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Formik, Form, Field, ErrorMessage } from 'formik';
 import { escape } from 'he';
 import * as Yup from 'yup';
 import DOMPurify from 'dompurify';  // FOR SANITIZING USER INPUT TO PREVENT XSS ATTACKS BEFORE SENDING TO THE BACKEND
 import axios from 'axios';
-axios.defaults.withCredentials = true;
 
 const Register = () => {
     const [isUserActivationEmailSent, setIsUserActivationEmailSent] = useState(false);
@@ -124,43 +124,45 @@ const Register = () => {
     }
 
     return (
-        <Formik initialValues={initialValues} validationSchema={validationSchema} onSubmit={handleSubmit}>
-            <Form>
-                <h1>Register Form</h1>
-                <div>
-                    <label htmlFor="username">Username: </label>
-                    <Field type="text" id="username" name="username" />
-                    <ErrorMessage name="username" component="div" />
-                </div>
+        <>
+            <Formik initialValues={initialValues} validationSchema={validationSchema} onSubmit={handleSubmit}>
+                <Form>
+                    <h1>Register Form</h1>
+                    <div>
+                        <label htmlFor="username">Username: </label>
+                        <Field type="text" id="username" name="username" />
+                        <ErrorMessage name="username" component="div" />
+                    </div>
 
-                <div>
-                    <label htmlFor="email">Email: </label>
-                    <Field type="email" id="email" name="email" />
-                    <ErrorMessage name="email" component="div" />
-                </div>
+                    <div>
+                        <label htmlFor="email">Email: </label>
+                        <Field type="email" id="email" name="email" />
+                        <ErrorMessage name="email" component="div" />
+                    </div>
 
-                <div>
-                    <label htmlFor="password">Password: </label>
-                    <Field type="password" id="password" name="password" />
-                    <ErrorMessage name="password" component="div" />
-                </div>
+                    <div>
+                        <label htmlFor="password">Password: </label>
+                        <Field type="password" id="password" name="password" />
+                        <ErrorMessage name="password" component="div" />
+                    </div>
 
-                <div>
-                    <label htmlFor="repeatPassword">Repeat Password: </label>
-                    <Field type="password" id="repeatPassword" name="repeatPassword" />
-                    <ErrorMessage name="repeatPassword" component="div" />
-                </div>
+                    <div>
+                        <label htmlFor="repeatPassword">Repeat Password: </label>
+                        <Field type="password" id="repeatPassword" name="repeatPassword" />
+                        <ErrorMessage name="repeatPassword" component="div" />
+                    </div>
 
-                <div>
-                    <label htmlFor="fullName">Full Name: </label>
-                    <Field type="text" id="fullName" name="fullName" />
-                    <ErrorMessage name="fullName" component="div" />
-                </div>
-                
-                <br/>
-                <button type="submit">Submit</button>
-            </Form>
-        </Formik>
+                    <div>
+                        <label htmlFor="fullName">Full Name: </label>
+                        <Field type="text" id="fullName" name="fullName" />
+                        <ErrorMessage name="fullName" component="div" />
+                    </div>
+                    
+                    <br/>
+                    <button type="submit">Submit</button> | <Link to='/login'>Login</Link>
+                </Form>
+            </Formik>
+        </>
     )
 }
 
