@@ -1,6 +1,6 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import {BrowserRouter as Router, Route, Routes} from 'react-router-dom';
+import {BrowserRouter as Router, Route, Routes, Navigate} from 'react-router-dom';
 
 import App from './pages/App';
 import Home from './pages/Home';
@@ -10,11 +10,10 @@ import AccountActivation from './pages/AccountActivation';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
 
-import PrivateRoutes from "./routes/PrivateRoutes";
 import PublicRoutes from "./routes/PublicRoutes";
+import PrivateRoutes from "./routes/PrivateRoutes";
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
-
 root.render(
   // <React.StrictMode>
       <Router>
@@ -38,6 +37,8 @@ root.render(
               <Route path="/home" element={<Home />} />
             </Route>
             {/* -------------- PRIVATE ROUTES JWT AUTHENTICATION TOKEN ------------ */}
+
+            <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Router>
   // </React.StrictMode>

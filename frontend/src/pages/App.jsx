@@ -5,11 +5,13 @@ axios.defaults.withCredentials = true;
 
 function App() {
   return (
-    <div>      
+    <>
+      <div>      
         <h1>Welcome to the landing page</h1>
         <Link to='/login'>Login</Link> |&nbsp; 
         <Link to='/register'>Register</Link>
-    </div>
+      </div>
+    </>
   )
 }
 

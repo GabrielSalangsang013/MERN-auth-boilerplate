@@ -66,8 +66,32 @@ const userSchema = new Schema({
   },
   forgotPassword: {
     type: 'boolean',
-    required: true,
+    required: false,
     default: false
+  },
+  verificationCodeLogin: { 
+    type: String,
+    required: false,
+    minlength: [7, 'Verification login code must be 7 characters'],
+    maxlength: [7, 'Verification login code must be 7 characters'],
+    match: [
+      /^(?=.*[a-zA-Z])(?=.*[0-9])[a-zA-Z0-9]{7}$/,
+      'Verification login code must be 7 characters and contain only numbers and letters',
+    ],
+    validate: [
+      {
+        validator: function(value) {
+          return !/\b(admin|root|superuser)\b/i.test(value);
+        },
+        message: 'Verification login code should not contain sensitive information',
+      },{
+        validator: function(value) {
+          const sanitizedValue = escape(value);
+          return sanitizedValue === value;
+        },
+        message: 'Invalid verification login code format or potentially unsafe characters',
+      },
+    ]
   },
   csrfTokenSecret: {
     type: Schema.Types.ObjectId,

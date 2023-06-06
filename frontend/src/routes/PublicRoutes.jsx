@@ -21,7 +21,7 @@ const PublicRoutes = () => {
   }, []);
 
   if (loading) {
-    return <div>Loading...</div>; // or any loading indicator/component
+    return <h1>Loading...</h1>; // or any loading indicator/component
   }
 
   if (!authenticated) {

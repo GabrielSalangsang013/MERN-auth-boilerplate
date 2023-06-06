@@ -5,7 +5,7 @@ import axios from 'axios';
 const AccountActivation = () => {
     const navigate = useNavigate();
     const { token } = useParams();
-    const [isActivating, setIsActivating] = useState(false);
+    const [isActivated, setIsActivated] = useState(false);
 
     useEffect(() => {
         if(token !== null) {
@@ -15,7 +15,7 @@ const AccountActivation = () => {
             .then((response) => {
                 if(response.status === 200 && response.data.status === 'ok') {
                     alert('You successfully activate your account');
-                    setIsActivating(true);
+                    setIsActivated(true);
                     navigate('/home');
                 }
             })
@@ -29,20 +29,13 @@ const AccountActivation = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
-    if(!isActivating) {
+    if(!isActivated) {
         return (
             <>
-                <h1>Loading</h1>
+                <h1>Loading...</h1>
             </>
         )
     }
-
-    return (
-        <>
-            <h1>Account Activation Page</h1>
-            <p>{token}</p>
-        </>
-    )
 }
 
 export default AccountActivation;
