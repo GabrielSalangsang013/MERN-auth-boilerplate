@@ -22,3 +22,6 @@ exports.dataToRemoveRequestUser = [
     "updatedAt",
     "__v",
 ]
+
+// HOW LONG THE TWO FACTOR AUTHENTICATION LOGIN CODE WILL BE EXPIRED?
+exports.TWO_FACTOR_AUTHENTICATION_LOGIN_CODE_EXPIRATION = 60 * 1000

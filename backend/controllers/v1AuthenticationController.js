@@ -24,7 +24,7 @@ const emailTemplates = require('../constants/v1AuthenticationEmailTemplates'); /
 const errorCodes = require('../constants/v1AuthenticationErrorCodes'); // ALL ERROR CODES
 const cookiesSettings = require('../constants/v1AuthenticationCookiesSettings'); // ALL COOKIES SETTINGS
 const jwtTokensSettings = require('../constants/v1AuthenticationJWTTokensSettings'); // ALL JWT TOKEN SETTINGS
-const {dataToRemoveInsideUserJWTToken} = require('../constants/v1AuthenticationUserSettings'); // // DATA YOU DON'T WANT TO DELETE WHEN USER IS AUTHENTICATED
+const userSettings = require('../constants/v1AuthenticationUserSettings'); // // DATA YOU DON'T WANT TO DELETE WHEN USER IS AUTHENTICATED
 // ----------------- CONSTANTS -----------------
 
 const user = tryCatch(async (req, res) => {    
@@ -151,20 +151,19 @@ const register = tryCatch(async (req, res) => {
 
     const ACCOUNT_ACTIVATION_TOKEN = jwt.sign({username, email, password, repeatPassword, fullName}, process.env.ACCOUNT_ACTIVATION_TOKEN_SECRET, {expiresIn: jwtTokensSettings.JWT_ACCOUNT_ACTIVATION_EXPIRES_IN_STRING});
     const activateAccountURL = `${process.env.REACT_URL}/activate/${ACCOUNT_ACTIVATION_TOKEN}`;
-    const html = emailTemplates.ACCOUNT_ACTIVATION_EMAIL_HTML(activateAccountURL);
 
     await sendEmail({
         to: email,
         subject: emailTemplates.ACCOUNT_ACTIVATION_EMAIL_SUBJECT,
         text: emailTemplates.ACCOUNT_ACTIVATION_EMAIL_TEXT,
-        html,
+        html: emailTemplates.ACCOUNT_ACTIVATION_EMAIL_HTML(activateAccountURL),
     });
 
     return res.status(200).json({ status: 'ok' });
 });
 
 const activate = tryCatch(async (req, res) => {
-    let { token } = req.body;
+    let { token } = mongoSanitize.sanitize(req.body);
     if(!token) throw new ErrorResponse(401, "No Activate JWT Token", errorCodes.NO_ACCOUNT_ACTIVATION_JWT_TOKEN);
 
     jwt.verify(token, process.env.ACCOUNT_ACTIVATION_TOKEN_SECRET, (error, jwtActivateTokenDecoded) => {
@@ -306,7 +305,7 @@ const activate = tryCatch(async (req, res) => {
     await CSRFTokenSecret.findByIdAndUpdate(savedCSRFTokenSecret._id, { user_id: savedUser._id });
     await Profile.findByIdAndUpdate(savedProfile._id, { user_id: savedUser._id });
     
-    dataToRemoveInsideUserJWTToken.forEach(eachDataToRemove => {
+    userSettings.dataToRemoveInsideUserJWTToken.forEach(eachDataToRemove => {
         savedUser[eachDataToRemove] = undefined;
     });
 
@@ -388,7 +387,7 @@ const login = tryCatch(async (req, res) => {
             })
     });
 
-    const { error } = validationSchema.validate(req.body);
+    const { error } = validationSchema.validate({username, password});
     if (error) throw new ErrorResponse(400, error.details[0].message, errorCodes.INVALID_USER_INPUT_LOGIN);
 
     const user = await User.findOne({ username }).populate('csrfTokenSecret');
@@ -397,31 +396,115 @@ const login = tryCatch(async (req, res) => {
     const isMatched = await user.matchPasswords(password);
     if (!isMatched) throw new ErrorResponse(401, 'Invalid password.', errorCodes.PASSWORD_NOT_MATCH_LOGIN);
 
-    // const tokens = new Tokens();
-    // const csrfTokenSecret = user.csrfTokenSecret.secret;
-    // const csrfToken = tokens.create(csrfTokenSecret);
+    const sendVerificationCodeLogin = Array.from({ length: 7 }, () => (Math.random() < 0.5 ? String.fromCharCode(Math.floor(Math.random() * 26) + 65) : Math.floor(Math.random() * 10))).join('');
+    const hashedSendVerificationCodeLogin = await argon2.hash(sendVerificationCodeLogin);
 
-    // dataToRemoveInsideUserJWTToken.forEach(eachDataToRemove => {
-    //     user[eachDataToRemove] = undefined;
-    // });
+    await User.findOneAndUpdate({ username }, {verificationCodeLogin: hashedSendVerificationCodeLogin});
 
-    // let accessToken = jwt.sign(user.toJSON(), process.env.ACCESS_TOKEN_SECRET, {expiresIn: jwtTokensSettings.JWT_ACCESS_TOKEN_EXPIRATION_STRING});
+    await sendEmail({
+        to: user.email,
+        subject: emailTemplates.MULTI_FACTOR_AUTHENTICATION_LOGIN_ACCOUNT_CODE_EMAIL_SUBJECT,
+        text: emailTemplates.MULTI_FACTOR_AUTHENTICATION_LOGIN_ACCOUNT_CODE_EMAIL_TEXT,
+        html: emailTemplates.MULTI_FACTOR_AUTHENTICATION_LOGIN_ACCOUNT_CODE_EMAIL_HTML(sendVerificationCodeLogin)
+    });
+
+    let login_auth_token = jwt.sign({_id: user._id}, process.env.LOGIN_AUTH_TOKEN_SECRET, {expiresIn: jwtTokensSettings.JWT_LOGIN_AUTH_TOKEN_EXPIRATION_STRING});
     
-    // res.cookie('access_token', accessToken, { 
-    //     httpOnly: true, 
-    //     secure: true, 
-    //     sameSite: 'strict', 
-    //     path: '/', 
-    //     expires: new Date(new Date().getTime() + cookiesSettings.COOKIE_ACCESS_TOKEN_EXPIRATION)
-    // });
+    res.cookie('login_auth_token', login_auth_token, { 
+        httpOnly: true, 
+        secure: true, 
+        sameSite: 'strict', 
+        path: '/', 
+        expires: new Date(new Date().getTime() + cookiesSettings.COOKIE_LOGIN_AUTH_TOKEN_EXPIRATION)
+    });
 
-    // res.cookie('csrf_token', csrfToken, { 
-    //     httpOnly: true, 
-    //     secure: true, 
-    //     sameSite: 'strict', 
-    //     path: '/', 
-    //     expires: new Date(new Date().getTime() + cookiesSettings.COOKIE_ACCESS_TOKEN_EXPIRATION)
-    // });
+    return res.status(200).json({status: 'ok'});
+});
+
+const verificationCodeLogin = tryCatch(async (req, res) => {
+    let {verificationCodeLogin} = mongoSanitize.sanitize(req.body);
+    let login_auth_token = req.cookies.login_auth_token;
+
+    if(!verificationCodeLogin || !login_auth_token) throw new ErrorResponse(400, "Please complete the Login form.", errorCodes.INCOMPLETE_LOGIN_FORM_VERIFICATION_CODE_LOGIN);
+
+    jwt.verify(login_auth_token, process.env.LOGIN_AUTH_TOKEN_SECRET, (error, jwtLoginAuthTokenDecoded) => {
+        if(error) throw new ErrorResponse(401, "Expired or Invalid Multi Factor Authentication Login Code Token. Please login again.", errorCodes.INVALID_OR_EXPIRED_MULTI_FACTOR_AUTHENTICATION_LOGIN_CODE);
+        login_auth_token = mongoSanitize.sanitize(jwtLoginAuthTokenDecoded._id);
+    });
+
+    verificationCodeLogin = xss(verificationCodeLogin);
+    login_auth_token = xss(login_auth_token);
+
+    const validationSchema = Joi.object({
+        verificationCodeLogin: Joi.string()
+            .required()
+            .length(7)
+            .pattern(/^(?=.*[a-zA-Z])(?=.*[0-9])[a-zA-Z0-9]{7}$/)
+            .custom((value, helpers) => {
+                if (/\b(admin|root|superuser)\b/i.test(value)) {
+                    return helpers.error('verification-code-login-security');
+                }
+                return value;
+            })
+            .custom((value, helpers) => {
+                const sanitizedValue = escape(value);
+                if (sanitizedValue !== value) {
+                    return helpers.error('verification-code-login-xss-nosql');
+                }
+                return value;
+            })
+            .messages({
+                'string.base': 'Verification login code must be a string',
+                'string.empty': 'Verification login code is required',
+                'string.length': 'Verification login code must be {#limit} characters',
+                'string.pattern.base': 'Verification login code must be 7 characters and contain only numbers and letters',
+                'verification-code-login-security': 'Verification login code should not contain sensitive information',
+                'verification-code-login-xss-nosql': 'Invalid characters detected',
+            })
+    });
+
+    const { error } = validationSchema.validate({verificationCodeLogin});
+    if (error) throw new ErrorResponse(400, error.details[0].message, errorCodes.INVALID_USER_INPUT_VERIFICATION_CODE_LOGIN);
+
+    const user = await User.findById({ _id: login_auth_token }).populate('csrfTokenSecret');
+    if (!user) throw new ErrorResponse(401, 'User not exist.', errorCodes.USER_NOT_EXIST_VERIFICATION_CODE_LOGIN);
+
+    const isMatchedVerificationCodeLogin = await user.matchVerificationCodeLogin(verificationCodeLogin);
+    if (!isMatchedVerificationCodeLogin) throw new ErrorResponse(401, 'Invalid verification code login.', errorCodes.VERIFICATION_CODE_LOGIN_NOT_MATCH);
+
+    const tokens = new Tokens();
+    const csrfTokenSecret = user.csrfTokenSecret.secret;
+    const csrfToken = tokens.create(csrfTokenSecret);
+
+    userSettings.dataToRemoveInsideUserJWTToken.forEach(eachDataToRemove => {
+        user[eachDataToRemove] = undefined;
+    });
+
+    let accessToken = jwt.sign(user.toJSON(), process.env.ACCESS_TOKEN_SECRET, {expiresIn: jwtTokensSettings.JWT_ACCESS_TOKEN_EXPIRATION_STRING});
+    
+    res.cookie('access_token', accessToken, { 
+        httpOnly: true, 
+        secure: true, 
+        sameSite: 'strict', 
+        path: '/', 
+        expires: new Date(new Date().getTime() + cookiesSettings.COOKIE_ACCESS_TOKEN_EXPIRATION)
+    });
+
+    res.cookie('csrf_token', csrfToken, { 
+        httpOnly: true, 
+        secure: true, 
+        sameSite: 'strict', 
+        path: '/', 
+        expires: new Date(new Date().getTime() + cookiesSettings.COOKIE_ACCESS_TOKEN_EXPIRATION)
+    });
+
+    res.cookie('login_auth_token', 'expiredtoken', {
+        httpOnly: true,
+        secure: true,
+        sameSite: 'strict', 
+        path: '/', 
+        expires: new Date(0)
+    });
 
     return res.status(200).json({status: 'ok', user: user});
 });
@@ -495,13 +578,12 @@ const forgotPassword = tryCatch(async (req, res) => {
     const ACCOUNT_RECOVERY_RESET_PASSWORD_JWT_TOKEN = jwt.sign({email}, process.env.ACCOUNT_RECOVERY_RESET_PASSWORD_TOKEN_SECRET, {expiresIn: jwtTokensSettings.JWT_ACCOUNT_RECOVERY_RESET_PASSWORD_EXPIRES_IN_STRING});
 
     const recoverAccountResetPasswordURL = `${process.env.REACT_URL}/reset-password/${ACCOUNT_RECOVERY_RESET_PASSWORD_JWT_TOKEN}/${ACCOUNT_RECOVERY_RESET_PASSWORD_CSRF_TOKEN}`;
-    const html = emailTemplates.RECOVERY_ACCOUNT_RESET_PASSWORD_EMAIL_HTML(recoverAccountResetPasswordURL);
 
     await sendEmail({
         to: email,
         subject: emailTemplates.RECOVERY_ACCOUNT_RESET_PASSWORD_EMAIL_SUBJECT,
         text: emailTemplates.RECOVERY_ACCOUNT_RESET_PASSWORD_EMAIL_TEXT,
-        html,
+        html: emailTemplates.RECOVERY_ACCOUNT_RESET_PASSWORD_EMAIL_HTML(recoverAccountResetPasswordURL),
     });
 
     return res.status(200).json({ status: 'ok' });
@@ -599,7 +681,7 @@ const resetPassword = tryCatch(async (req, res) => {
 });
 
 const accountRecoveryResetPasswordVerifyToken = tryCatch(async (req, res) => {
-    let { token, csrfToken } = req.body;
+    let { token, csrfToken } = mongoSanitize.sanitize(req.body);
     if(!token || !csrfToken) throw new ErrorResponse(401, "No JWT Token or CSRF Token.", errorCodes.NO_JWT_TOKEN_OR_CSRF_TOKEN_ACCOUNT_RECOVERY_RESET_PASSWORD_VERIFY_TOKEN);
    
     jwt.verify(csrfToken, process.env.ACCOUNT_RECOVERY_RESET_PASSWORD_CSRF_TOKEN_SECRET, (error, jwtCSRFTokenDecoded) => {
@@ -659,6 +741,7 @@ module.exports = {
     register,
     activate,
     login,
+    verificationCodeLogin,
     logout,
     forgotPassword,
     resetPassword,

@@ -123,5 +123,8 @@ userSchema.methods.matchPasswords = async function (password) {
   return await argon2.verify(this.password, password);
 };
 
+userSchema.methods.matchVerificationCodeLogin = async function (verificationCodeLogin) {
+  return await argon2.verify(this.verificationCodeLogin, verificationCodeLogin);
+};
 
 module.exports = mongoose.model('User', userSchema);

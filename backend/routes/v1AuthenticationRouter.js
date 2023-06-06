@@ -15,13 +15,14 @@ const v1AuthenticationController = require('../controllers/v1AuthenticationContr
 // ------------ CONSTANTS --------------------
 const cookiesSettings = require('../constants/v1AuthenticationCookiesSettings'); // ALL COOKIES SETTINGS
 const errorCodes = require('../constants/v1AuthenticationErrorCodes'); // ALL ERROR CODES
-const {dataToRemoveRequestUser} = require('../constants/v1AuthenticationUserSettings'); // // DATA YOU DON'T WANT TO DELETE WHEN USER IS AUTHENTICATED
+const userSettings = require('../constants/v1AuthenticationUserSettings'); // // DATA YOU DON'T WANT TO DELETE WHEN USER IS AUTHENTICATED
 // ------------ CONSTANTS --------------------
 
 // ------------ MIDDLEWARES --------------------
 const {
     userLimiter,
     loginLimiter,
+    verificationCodeLoginLimiter,
     registerLimiter,
     activateLimiter,
     forgotPasswordLimiter,
@@ -141,10 +142,11 @@ function verifyPrivateCSRFToken(req, res, next) {
             path: '/', 
             expires: new Date(new Date().getTime() + cookiesSettings.COOKIE_PUBLIC_CSRF_TOKEN_EXPIRATION)
         });
+        
         return res.status(403).json({message: 'You are forbidden. Invalid CSRF token.', errorCode: errorCodes.INVALID_CSRF_TOKEN_VERIFY_PRIVATE_CSRF_TOKEN});
     }
 
-    dataToRemoveRequestUser.forEach(eachDataToRemove => {
+    userSettings.dataToRemoveRequestUser.forEach(eachDataToRemove => {
         req.user[eachDataToRemove] = undefined;
     });
 
@@ -168,6 +170,7 @@ function verifyPublicCSRFToken(req, res, next) {
             path: '/', 
             expires: new Date(new Date().getTime() + cookiesSettings.COOKIE_PUBLIC_CSRF_TOKEN_EXPIRATION)
         });
+
         return res.status(401).json({message: 'You are unauthorized user.', errorCode: errorCodes.NO_CSRF_TOKEN_VERIFY_PUBLIC_CSRF_TOKEN});
     }
 
@@ -184,6 +187,7 @@ function verifyPublicCSRFToken(req, res, next) {
             path: '/', 
             expires: new Date(new Date().getTime() + cookiesSettings.COOKIE_PUBLIC_CSRF_TOKEN_EXPIRATION)
         });
+        
         return res.status(403).json({message: 'You are forbidden. Invalid CSRF token.', errorCode: errorCodes.INVALID_CSRF_TOKEN_VERIFY_PUBLIC_CSRF_TOKEN});
     }
 
@@ -215,6 +219,7 @@ function sendPublicCSRFTokenToUser(req, res, next) {
 // API THAT VERIFY PUBLIC CSRF TOKEN IN THE MIDDLEWARE
 router.post('/register', registerLimiter, verifyPublicCSRFToken, v1AuthenticationController.register);
 router.post('/login', loginLimiter, verifyPublicCSRFToken, v1AuthenticationController.login);
+router.post('/verification-code-login', verificationCodeLoginLimiter, verifyPublicCSRFToken, v1AuthenticationController.verificationCodeLogin);
 router.post('/activate', activateLimiter, verifyPublicCSRFToken, v1AuthenticationController.activate);
 router.post('/forgot-password', forgotPasswordLimiter, verifyPublicCSRFToken, v1AuthenticationController.forgotPassword);
 
