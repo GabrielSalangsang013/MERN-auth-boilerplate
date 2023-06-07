@@ -33,15 +33,9 @@ const ForgotPassword = () => {
     });
 
     const handleSubmit = (values) => {
-        // STEP 1: GET ALL THE INPUT VALUES THAT HAS BEEN SUCCESSFULLY PASSED TO VALIDATION
         const {email} = values;
-
-        // STEP 2: SANITIZE THE USER INPUT TO PREVENT XSS ATTACK
         let sanitizedRegisterEmail = DOMPurify.sanitize(email);
-        // END SANITIZE THE USER INPUT TO PREVENT XSS ATTACK
-
-        // STEP 3: SEND THE SANITIZED INPUT TO THE BACKEND FOR THE REGISTRATION OF THE ACCOUNT PURPOSES
-        axios.post('http://localhost:4000/api/v1/authentication/forgot-password', {
+        axios.post(`${process.env.REACT_APP_API_KEY}/api/v1/authentication/forgot-password`, {
             email: sanitizedRegisterEmail
         })
         .then((response) => {
@@ -53,7 +47,6 @@ const ForgotPassword = () => {
         .catch(function (error) {
             alert(error.response.data.message);
         })
-        // END SEND THE SANITIZED INPUT TO THE BACKEND FOR THE REGISTRATION OF THE ACCOUNT PURPOSES
     };
 
 

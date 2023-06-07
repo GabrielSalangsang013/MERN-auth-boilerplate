@@ -9,7 +9,7 @@ const AccountActivation = () => {
 
     useEffect(() => {
         if(token !== null) {
-            axios.post(`http://localhost:4000/api/v1/authentication/activate`, {
+            axios.post(`${process.env.REACT_APP_API_KEY}/api/v1/authentication/activate`, {
                 token: token
             })
             .then((response) => {

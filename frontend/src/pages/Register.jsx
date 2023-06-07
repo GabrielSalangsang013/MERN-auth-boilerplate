@@ -84,19 +84,14 @@ const Register = () => {
     });
 
     const handleSubmit = (values) => {
-        // STEP 1: GET ALL THE INPUT VALUES THAT HAS BEEN SUCCESSFULLY PASSED TO VALIDATION
         const {username, email, password, repeatPassword, fullName} = values;
-
-        // STEP 2: SANITIZE THE USER INPUT TO PREVENT XSS ATTACK
         let sanitizedRegisterUsername = DOMPurify.sanitize(username);
         let sanitizedRegisterEmail = DOMPurify.sanitize(email);
         let sanitizedRegisterPassword = DOMPurify.sanitize(password);
         let sanitizedRegisterRepeatPassword = DOMPurify.sanitize(repeatPassword);
         let sanitizedRegisterFullName = DOMPurify.sanitize(fullName);
-        // END SANITIZE THE USER INPUT TO PREVENT XSS ATTACK
-
-        // STEP 3: SEND THE SANITIZED INPUT TO THE BACKEND FOR THE REGISTRATION OF THE ACCOUNT PURPOSES
-        axios.post('http://localhost:4000/api/v1/authentication/register', {
+        
+        axios.post(`${process.env.REACT_APP_API_KEY}/api/v1/authentication/register`, {
             username: sanitizedRegisterUsername,
             email: sanitizedRegisterEmail,
             password: sanitizedRegisterPassword,
@@ -112,7 +107,6 @@ const Register = () => {
         .catch(function (error) {
             alert(error.response.data.message);
         })
-        // END SEND THE SANITIZED INPUT TO THE BACKEND FOR THE REGISTRATION OF THE ACCOUNT PURPOSES
     };
 
     if(isUserActivationEmailSent) { 

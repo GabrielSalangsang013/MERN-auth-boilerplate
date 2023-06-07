@@ -39,7 +39,7 @@ const LoginVerificationCode = () => {
     const handleSubmit = (values) => {
         const {verificationCodeLogin} = values;
         const sanitizedVerificationCodeLogin = DOMPurify.sanitize(verificationCodeLogin);
-        axios.post('http://localhost:4000/api/v1/authentication/verification-code-login', {
+        axios.post(`${process.env.REACT_APP_API_KEY}/api/v1/authentication/verification-code-login`, {
             verificationCodeLogin: sanitizedVerificationCodeLogin
         })
         .then((response) => {
@@ -55,29 +55,19 @@ const LoginVerificationCode = () => {
 
     return (
         <>
-            <Formik 
-                initialValues={initialValues} 
-                validationSchema={validationSchema} 
-                onSubmit={handleSubmit}
-                >
-
+            <Formik initialValues={initialValues} validationSchema={validationSchema} onSubmit={handleSubmit}>
                 <Form>
                     <h1>Two Factor Authencation Login Code Form</h1>
-
                     <div>
                         <img src={user.profilePicture} alt="nothing" width="25" /> &nbsp; {user.username}
                     </div>
-                    
                     <br/>
-
                     <div>
                         <label htmlFor="verificationCodeLogin">Verification Code: </label>
                         <Field type="text" id="verificationCodeLogin" name="verificationCodeLogin" autoComplete="off" />
                         <ErrorMessage name="verificationCodeLogin" component="div" />
                     </div>
-                    
                     <br/>
-
                     <button type="submit">Send Code</button>
                 </Form>
             </Formik>

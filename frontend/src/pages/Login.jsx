@@ -51,13 +51,13 @@ const Login = () => {
         const {username, password} = values;
         const sanitizedLoginUsername = DOMPurify.sanitize(username);
         const sanitizedLoginPassword = DOMPurify.sanitize(password);
-        axios.post('http://localhost:4000/api/v1/authentication/login', {
+        axios.post(`${process.env.REACT_APP_API_KEY}/api/v1/authentication/login`, {
             username: sanitizedLoginUsername,
             password: sanitizedLoginPassword
         })
         .then((response) => {
             if(response.status === 200 && response.data.status === 'ok') {
-                alert('Two factor authentication login code has been sent to your email.');
+                alert('Multi factor authentication login code has been sent to your email.');
                 navigate('/login/verify-code')
             } 
         })
