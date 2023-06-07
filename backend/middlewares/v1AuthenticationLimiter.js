@@ -34,6 +34,17 @@ const verificationCodeLoginLimiter = rateLimit({
   message: 'Too many verification code login requests, please try again later.',
 });
 
+const verificationCodeLoginLogoutLimiter = rateLimit({
+  store: new MongoStore({
+    uri: process.env.MONGO_DB_URI_LIMITER, // MongoDB connection URI
+    collectionName: 'verification-code-login-logout-limits', // MongoDB collection to store rate limit data
+    expireTimeMs: 60 * 1000, // Time window in milliseconds
+    errorHandler: console.error, // Optional error handler
+  }),
+  max: 100, // Maximum number of requests per time window
+  message: 'Too many verification code login logout requests, please try again later.',
+});
+
 const registerLimiter = rateLimit({
     store: new MongoStore({
       uri: process.env.MONGO_DB_URI_LIMITER, // MongoDB connection URI
@@ -104,6 +115,7 @@ module.exports = {
     userLimiter,
     loginLimiter,
     verificationCodeLoginLimiter,
+    verificationCodeLoginLogoutLimiter,
     registerLimiter,
     activateLimiter,
     forgotPasswordLimiter,

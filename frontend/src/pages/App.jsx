@@ -8,7 +8,7 @@ function App() {
     <>
       <div>      
         <h1>Welcome to the landing page</h1>
-        |&nbsp;  <Link to='/login'>Login</Link> |&nbsp; 
+        <Link to='/login'>Login</Link> |&nbsp; 
         <Link to='/register'>Register</Link>
       </div>
     </>

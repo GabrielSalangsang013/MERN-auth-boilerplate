@@ -53,11 +53,24 @@ const LoginVerificationCode = () => {
         });
     };
 
+    const handleLogout = () => {
+        axios.post(`${process.env.REACT_APP_API_KEY}/api/v1/authentication/verification-code-login/logout`)
+        .then((response) => {
+            if(response.status === 200 && response.data.status === 'ok') {
+                alert('Successfully logged out.');
+                navigate('/login');
+            } 
+        })
+        .catch(function (error) {
+            alert(error.response.data.message);
+        });
+    }
+
     return (
         <>
             <Formik initialValues={initialValues} validationSchema={validationSchema} onSubmit={handleSubmit}>
                 <Form>
-                    <h1>Two Factor Authencation Login Code Form</h1>
+                    <h1>Multi Factor Authencation Login Code Form</h1>
                     <div>
                         <img src={user.profilePicture} alt="nothing" width="25" /> &nbsp; {user.username}
                     </div>
@@ -69,6 +82,7 @@ const LoginVerificationCode = () => {
                     </div>
                     <br/>
                     <button type="submit">Send Code</button>
+                    <button type="button" onClick={handleLogout}>Logout</button>
                 </Form>
             </Formik>
         </>

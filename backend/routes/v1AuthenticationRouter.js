@@ -23,6 +23,7 @@ const {
     userLimiter,
     loginLimiter,
     verificationCodeLoginLimiter,
+    verificationCodeLoginLogoutLimiter,
     registerLimiter,
     activateLimiter,
     forgotPasswordLimiter,
@@ -35,12 +36,11 @@ function checkIfHasMFALoginToken(req, res, next) {
     const mfa_login_token = req.cookies.mfa_login_token;
     
     if(mfa_login_token) {
-        if(jwt.verify(mfa_login_token, process.env.MFA_LOGIN_TOKEN_SECRET, (error, mfaLoginTokenDecoded) => {
-            const {username, profilePicture} = mfaLoginTokenDecoded; 
+        if(jwt.verify(mfa_login_token, process.env.MFA_LOGIN_TOKEN_SECRET)) {
+            const {username, profilePicture} = jwt.decode(mfa_login_token); 
             return res.status(200).json({status: 'MFA-Mode', user: {username, profilePicture}}) 
-        }));
+        };
     }
-
     next();
 }
 
@@ -232,6 +232,7 @@ function sendPublicCSRFTokenToUser(req, res, next) {
 router.post('/register', registerLimiter, verifyPublicCSRFToken, v1AuthenticationController.register);
 router.post('/login', loginLimiter, verifyPublicCSRFToken, v1AuthenticationController.login);
 router.post('/verification-code-login', verificationCodeLoginLimiter, verifyPublicCSRFToken, v1AuthenticationController.verificationCodeLogin);
+router.post('/verification-code-login/logout', verificationCodeLoginLogoutLimiter, verifyPublicCSRFToken, v1AuthenticationController.verificationCodeLoginLogout);
 router.post('/activate', activateLimiter, verifyPublicCSRFToken, v1AuthenticationController.activate);
 router.post('/forgot-password', forgotPasswordLimiter, verifyPublicCSRFToken, v1AuthenticationController.forgotPassword);
 

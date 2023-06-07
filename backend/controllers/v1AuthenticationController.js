@@ -509,6 +509,27 @@ const verificationCodeLogin = tryCatch(async (req, res) => {
     return res.status(200).json({status: 'ok', user: user});
 });
 
+const verificationCodeLoginLogout = tryCatch(async (req, res) => {
+    
+    res.cookie('csrf_token', 'expiredtoken', {
+        httpOnly: true,
+        secure: true,
+        sameSite: 'strict',
+        path: '/',
+        expires: new Date(0)
+    });
+    
+    res.cookie('mfa_login_token', 'expiredtoken', {
+        httpOnly: true,
+        secure: true,
+        sameSite: 'strict',
+        path: '/',
+        expires: new Date(0)
+    });
+
+    return res.status(200).json({status: 'ok'});
+})
+
 const logout = tryCatch(async (req, res) => {
     const tokens = new Tokens();
     const csrfTokenSecret = process.env.PUBLIC_CSRF_TOKEN_SECRET;
@@ -742,6 +763,7 @@ module.exports = {
     activate,
     login,
     verificationCodeLogin,
+    verificationCodeLoginLogout,
     logout,
     forgotPassword,
     resetPassword,
