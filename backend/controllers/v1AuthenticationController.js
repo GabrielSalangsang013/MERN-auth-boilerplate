@@ -527,7 +527,7 @@ const verificationCodeLoginLogout = tryCatch(async (req, res) => {
     });
 
     return res.status(200).json({status: 'ok'});
-})
+});
 
 const logout = tryCatch(async (req, res) => {
     const tokens = new Tokens();
