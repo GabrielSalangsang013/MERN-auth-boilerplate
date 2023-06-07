@@ -3,7 +3,7 @@ const MongoStore = require('rate-limit-mongo');
 
 const userLimiter = rateLimit({
     store: new MongoStore({
-      uri: process.env.MONGO_DB_URI, // MongoDB connection URI
+      uri: process.env.MONGO_DB_URI_LIMITER, // MongoDB connection URI
       collectionName: 'user-limits', // MongoDB collection to store rate limit data
       expireTimeMs: 60 * 1000, // Time window in milliseconds
       errorHandler: console.error, // Optional error handler
@@ -14,7 +14,7 @@ const userLimiter = rateLimit({
 
 const loginLimiter = rateLimit({
     store: new MongoStore({
-      uri: process.env.MONGO_DB_URI, // MongoDB connection URI
+      uri: process.env.MONGO_DB_URI_LIMITER, // MongoDB connection URI
       collectionName: 'login-limits', // MongoDB collection to store rate limit data
       expireTimeMs: 60 * 1000, // Time window in milliseconds
       errorHandler: console.error, // Optional error handler
@@ -25,7 +25,7 @@ const loginLimiter = rateLimit({
 
 const verificationCodeLoginLimiter = rateLimit({
   store: new MongoStore({
-    uri: process.env.MONGO_DB_URI, // MongoDB connection URI
+    uri: process.env.MONGO_DB_URI_LIMITER, // MongoDB connection URI
     collectionName: 'verification-code-login-limits', // MongoDB collection to store rate limit data
     expireTimeMs: 60 * 1000, // Time window in milliseconds
     errorHandler: console.error, // Optional error handler
@@ -36,7 +36,7 @@ const verificationCodeLoginLimiter = rateLimit({
 
 const registerLimiter = rateLimit({
     store: new MongoStore({
-      uri: process.env.MONGO_DB_URI, // MongoDB connection URI
+      uri: process.env.MONGO_DB_URI_LIMITER, // MongoDB connection URI
       collectionName: 'register-limits', // MongoDB collection to store rate limit data
       expireTimeMs: 60 * 1000, // Time window in milliseconds
       errorHandler: console.error, // Optional error handler
@@ -47,7 +47,7 @@ const registerLimiter = rateLimit({
 
 const activateLimiter = rateLimit({
     store: new MongoStore({
-      uri: process.env.MONGO_DB_URI, // MongoDB connection URI
+      uri: process.env.MONGO_DB_URI_LIMITER, // MongoDB connection URI
       collectionName: 'activate-limits', // MongoDB collection to store rate limit data
       expireTimeMs: 60 * 1000, // Time window in milliseconds
       errorHandler: console.error, // Optional error handler
@@ -58,7 +58,7 @@ const activateLimiter = rateLimit({
 
 const forgotPasswordLimiter = rateLimit({
     store: new MongoStore({
-      uri: process.env.MONGO_DB_URI, // MongoDB connection URI
+      uri: process.env.MONGO_DB_URI_LIMITER, // MongoDB connection URI
       collectionName: 'forgot-password-limits', // MongoDB collection to store rate limit data
       expireTimeMs: 60 * 1000, // Time window in milliseconds
       errorHandler: console.error, // Optional error handler
@@ -69,7 +69,7 @@ const forgotPasswordLimiter = rateLimit({
 
 const resetPasswordLimiter = rateLimit({
     store: new MongoStore({
-      uri: process.env.MONGO_DB_URI, // MongoDB connection URI
+      uri: process.env.MONGO_DB_URI_LIMITER, // MongoDB connection URI
       collectionName: 'reset-password-limits', // MongoDB collection to store rate limit data
       expireTimeMs: 60 * 1000, // Time window in milliseconds
       errorHandler: console.error, // Optional error handler
@@ -80,7 +80,7 @@ const resetPasswordLimiter = rateLimit({
 
 const resetPasswordVerifyTokenLimiter = rateLimit({
     store: new MongoStore({
-      uri: process.env.MONGO_DB_URI, // MongoDB connection URI
+      uri: process.env.MONGO_DB_URI_LIMITER, // MongoDB connection URI
       collectionName: 'reset-password-verify-token-limits', // MongoDB collection to store rate limit data
       expireTimeMs: 60 * 1000, // Time window in milliseconds
       errorHandler: console.error, // Optional error handler
@@ -91,7 +91,7 @@ const resetPasswordVerifyTokenLimiter = rateLimit({
 
 const logoutLimiter = rateLimit({
     store: new MongoStore({
-      uri: process.env.MONGO_DB_URI, // MongoDB connection URI
+      uri: process.env.MONGO_DB_URI_LIMITER, // MongoDB connection URI
       collectionName: 'logout-limits', // MongoDB collection to store rate limit data
       expireTimeMs: 60 * 1000, // Time window in milliseconds
       errorHandler: console.error, // Optional error handler

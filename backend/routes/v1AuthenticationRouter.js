@@ -31,13 +31,25 @@ const {
     logoutLimiter
 } = require('../middlewares/v1AuthenticationLimiter');
 
+function checkIfHasMFALoginToken(req, res, next) {
+    const mfa_login_token = req.cookies.mfa_login_token;
+    
+    if(mfa_login_token) {
+        if(jwt.verify(mfa_login_token, process.env.MFA_LOGIN_TOKEN_SECRET, (error, mfaLoginTokenDecoded) => {
+            const {username, profilePicture} = mfaLoginTokenDecoded; 
+            return res.status(200).json({status: 'MFA-Mode', user: {username, profilePicture}}) 
+        }));
+    }
+
+    next();
+}
+
 function authenticateJWTToken(req, res, next) {
     const token = req.cookies.access_token;
     const csrfToken = req.cookies.csrf_token;
     
     if (token == null) {
         const tokens = new Tokens();
-
         // THE USER HAS NO JWT TOKEN
         if (!tokens.verify(process.env.PUBLIC_CSRF_TOKEN_SECRET, csrfToken)) {
             const csrfTokenSecret = process.env.PUBLIC_CSRF_TOKEN_SECRET;
@@ -224,7 +236,7 @@ router.post('/activate', activateLimiter, verifyPublicCSRFToken, v1Authenticatio
 router.post('/forgot-password', forgotPasswordLimiter, verifyPublicCSRFToken, v1AuthenticationController.forgotPassword);
 
 // API THAT VERIFY PRIVATE CSRF TOKEN FIRST IN THE MIDDLEWARE
-router.get('/user', userLimiter, sendPublicCSRFTokenToUser, authenticateJWTToken, verifyPrivateCSRFToken, v1AuthenticationController.user); // USER MUST BE AUTHETICATED
+router.get('/user', userLimiter, checkIfHasMFALoginToken, sendPublicCSRFTokenToUser, authenticateJWTToken, verifyPrivateCSRFToken, v1AuthenticationController.user); // USER MUST BE AUTHETICATED
 router.post('/logout', logoutLimiter, sendPublicCSRFTokenToUser, authenticateJWTToken, verifyPrivateCSRFToken, v1AuthenticationController.logout); // USER MUST BE AUTHETICATED
 
 // API THAT VERIFY PRIVATE CSRF TOKEN VIA REQUEST BODY INSIDE CONTROLLER

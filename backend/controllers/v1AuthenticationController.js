@@ -390,13 +390,13 @@ const login = tryCatch(async (req, res) => {
     const { error } = validationSchema.validate({username, password});
     if (error) throw new ErrorResponse(400, error.details[0].message, errorCodes.INVALID_USER_INPUT_LOGIN);
 
-    const user = await User.findOne({ username }).populate('csrfTokenSecret');
+    const user = await User.findOne({ username }).populate('profile');
     if (!user) throw new ErrorResponse(401, 'Invalid username.', errorCodes.USERNAME_NOT_EXIST_LOGIN);
 
     const isMatched = await user.matchPasswords(password);
     if (!isMatched) throw new ErrorResponse(401, 'Invalid password.', errorCodes.PASSWORD_NOT_MATCH_LOGIN);
 
-    const sendVerificationCodeLogin = Array.from({ length: 7 }, () => (Math.random() < 0.5 ? String.fromCharCode(Math.floor(Math.random() * 26) + 65) : Math.floor(Math.random() * 10))).join('');
+    const sendVerificationCodeLogin = Array.from({ length: 7 }, () => (Math.random() < 0.33 ? String.fromCharCode(Math.floor(Math.random() * 26) + 65) : Math.random() < 0.67 ? String.fromCharCode(Math.floor(Math.random() * 26) + 97) : Math.floor(Math.random() * 10))).join('');
     const hashedSendVerificationCodeLogin = await argon2.hash(sendVerificationCodeLogin);
 
     await User.findOneAndUpdate({ username }, {verificationCodeLogin: hashedSendVerificationCodeLogin});
@@ -408,14 +408,14 @@ const login = tryCatch(async (req, res) => {
         html: emailTemplates.MULTI_FACTOR_AUTHENTICATION_LOGIN_ACCOUNT_CODE_EMAIL_HTML(sendVerificationCodeLogin)
     });
 
-    let login_auth_token = jwt.sign({_id: user._id}, process.env.LOGIN_AUTH_TOKEN_SECRET, {expiresIn: jwtTokensSettings.JWT_LOGIN_AUTH_TOKEN_EXPIRATION_STRING});
+    let mfa_login_token = jwt.sign({_id: user._id, username: user.username, profilePicture: user.profile.profilePicture }, process.env.MFA_LOGIN_TOKEN_SECRET, {expiresIn: jwtTokensSettings.JWT_MFA_LOGIN_TOKEN_EXPIRATION_STRING});
     
-    res.cookie('login_auth_token', login_auth_token, { 
+    res.cookie('mfa_login_token', mfa_login_token, { 
         httpOnly: true, 
         secure: true, 
         sameSite: 'strict', 
         path: '/', 
-        expires: new Date(new Date().getTime() + cookiesSettings.COOKIE_LOGIN_AUTH_TOKEN_EXPIRATION)
+        expires: new Date(new Date().getTime() + cookiesSettings.COOKIE_MFA_LOGIN_TOKEN_EXPIRATION)
     });
 
     return res.status(200).json({status: 'ok'});
@@ -423,17 +423,17 @@ const login = tryCatch(async (req, res) => {
 
 const verificationCodeLogin = tryCatch(async (req, res) => {
     let {verificationCodeLogin} = mongoSanitize.sanitize(req.body);
-    let login_auth_token = req.cookies.login_auth_token;
+    let mfa_login_token = req.cookies.mfa_login_token;
 
-    if(!verificationCodeLogin || !login_auth_token) throw new ErrorResponse(400, "Please complete the Login form.", errorCodes.INCOMPLETE_LOGIN_FORM_VERIFICATION_CODE_LOGIN);
+    if(!verificationCodeLogin || !mfa_login_token) throw new ErrorResponse(400, "Please complete the Login form.", errorCodes.INCOMPLETE_LOGIN_FORM_VERIFICATION_CODE_LOGIN);
 
-    jwt.verify(login_auth_token, process.env.LOGIN_AUTH_TOKEN_SECRET, (error, jwtLoginAuthTokenDecoded) => {
+    jwt.verify(mfa_login_token, process.env.MFA_LOGIN_TOKEN_SECRET, (error, jwtMFALoginTokenDecoded) => {
         if(error) throw new ErrorResponse(401, "Expired or Invalid Multi Factor Authentication Login Code Token. Please login again.", errorCodes.INVALID_OR_EXPIRED_MULTI_FACTOR_AUTHENTICATION_LOGIN_CODE);
-        login_auth_token = mongoSanitize.sanitize(jwtLoginAuthTokenDecoded._id);
+        mfa_login_token = mongoSanitize.sanitize(jwtMFALoginTokenDecoded._id);
     });
 
     verificationCodeLogin = xss(verificationCodeLogin);
-    login_auth_token = xss(login_auth_token);
+    mfa_login_token = xss(mfa_login_token);
 
     const validationSchema = Joi.object({
         verificationCodeLogin: Joi.string()
@@ -466,7 +466,7 @@ const verificationCodeLogin = tryCatch(async (req, res) => {
     const { error } = validationSchema.validate({verificationCodeLogin});
     if (error) throw new ErrorResponse(400, error.details[0].message, errorCodes.INVALID_USER_INPUT_VERIFICATION_CODE_LOGIN);
 
-    const user = await User.findById({ _id: login_auth_token }).populate('csrfTokenSecret');
+    const user = await User.findById({ _id: mfa_login_token }).populate('csrfTokenSecret');
     if (!user) throw new ErrorResponse(401, 'User not exist.', errorCodes.USER_NOT_EXIST_VERIFICATION_CODE_LOGIN);
 
     const isMatchedVerificationCodeLogin = await user.matchVerificationCodeLogin(verificationCodeLogin);
@@ -498,7 +498,7 @@ const verificationCodeLogin = tryCatch(async (req, res) => {
         expires: new Date(new Date().getTime() + cookiesSettings.COOKIE_ACCESS_TOKEN_EXPIRATION)
     });
 
-    res.cookie('login_auth_token', 'expiredtoken', {
+    res.cookie('mfa_login_token', 'expiredtoken', {
         httpOnly: true,
         secure: true,
         sameSite: 'strict', 

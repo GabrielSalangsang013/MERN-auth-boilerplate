@@ -1,16 +1,19 @@
 import React, { useEffect, useState } from 'react';
 import { Navigate, Outlet } from 'react-router-dom';
-import { isAuthenticated } from '../helpers/auth'; // Import your authentication helper
+import { isAuthenticated, isMFAMode } from '../helpers/auth'; // Import your authentication helper
 
 const PublicRoutes = () => {
   const [loading, setLoading] = useState(true);
   const [authenticated, setAuthenticated] = useState(false);
+  const [mfa, setMFA] = useState(false);
 
   useEffect(() => {
     const checkAuthentication = async () => {
       try {
-        const result = await isAuthenticated(); // Assuming this function returns a promise
-        setAuthenticated(result);
+        const isMFAModeResult = await isMFAMode(); // Assuming this function returns a promise
+        const isAuthenticatedResult = await isAuthenticated(); // Assuming this function returns a promise
+        setMFA(isMFAModeResult);
+        setAuthenticated(isAuthenticatedResult);
         setLoading(false);
       } catch (error) {
         // Handle any error that occurred during authentication
@@ -24,15 +27,15 @@ const PublicRoutes = () => {
     return <h1>Loading...</h1>; // or any loading indicator/component
   }
 
-  if (!authenticated) {
-    return <Outlet /> ;
+  if (!authenticated && mfa) {
+    return <Navigate to="/login/verify-code" />
   }
 
-  return (
-    <>
-        <Navigate to="/home" />
-    </>
-  );
+  if(!authenticated && !mfa) {
+    return <Outlet />;
+  }
+
+  return <Navigate to="/home" />
 };
 
 export default PublicRoutes;

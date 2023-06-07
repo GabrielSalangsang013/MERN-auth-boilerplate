@@ -5,11 +5,13 @@ import {BrowserRouter as Router, Route, Routes, Navigate} from 'react-router-dom
 import App from './pages/App';
 import Home from './pages/Home';
 import Login from './pages/Login';
+import LoginVerificationCode from './pages/LoginVerificationCode';
 import Register from './pages/Register';
 import AccountActivation from './pages/AccountActivation';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
 
+import MFARoutes from "./routes/MFARoutes";
 import PublicRoutes from "./routes/PublicRoutes";
 import PrivateRoutes from "./routes/PrivateRoutes";
 
@@ -20,7 +22,10 @@ root.render(
         <Routes>
             {/* -------------- LANDING PAGE ROUTE ------------ */}
             <Route path='/' exact element={<App />}/>
-            {/* -------------- LANDING PAGE ROUTE ------------ */}
+
+            <Route element={<MFARoutes />}>
+                <Route path='/login/verify-code' exact element={<LoginVerificationCode />}/>
+            </Route>
 
             {/* -------------- PUBLIC ROUTES ------------ */}
             <Route element={<PublicRoutes />}>
@@ -30,13 +35,11 @@ root.render(
               <Route path='/forgot-password' exact element={<ForgotPassword />}/>
               <Route path='/reset-password/:token/:csrfToken' exact element={<ResetPassword />}/>
             </Route>
-            {/* -------------- PUBLIC ROUTES ------------ */}
 
             {/* -------------- PRIVATE ROUTES REQUIRES JWT AUTHENTICATION TOKEN ------------ */}
             <Route element={<PrivateRoutes />}>
               <Route path="/home" element={<Home />} />
             </Route>
-            {/* -------------- PRIVATE ROUTES JWT AUTHENTICATION TOKEN ------------ */}
 
             <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
