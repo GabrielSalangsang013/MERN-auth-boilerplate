@@ -510,7 +510,6 @@ const verificationCodeLogin = tryCatch(async (req, res) => {
 });
 
 const verificationCodeLoginLogout = tryCatch(async (req, res) => {
-    
     res.cookie('csrf_token', 'expiredtoken', {
         httpOnly: true,
         secure: true,
