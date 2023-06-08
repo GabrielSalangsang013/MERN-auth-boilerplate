@@ -17,8 +17,8 @@ const CSRFTokenSecret = require('../models/csrfTokenSecretModel');
 const sendEmail = require('../utils/sendEmail'); // FOR SENDING EMAIL TO THE USER
 const ErrorResponse = require('../utils/ErrorResponse'); // FOR SENDING ERROR TO THE ERROR HANDLER MIDDLEWARE
 const { tryCatch } = require("../utils/tryCatch"); // FOR AVOIDING RETYPING TRY AND CATCH IN EACH CONTROLLER
-const generateRandomUsernameSSO = require('../utils/generateRandomUsernameSSO');
 const generateRandomPasswordSSO = require('../utils/generateRandomPasswordSSO');
+const generateRandomUsernameSSO = require('../utils/generateRandomUsernameSSO');
 // ----------------- UTILITIES -----------------
 
 // ----------------- CONSTANTS -----------------
@@ -124,7 +124,7 @@ const register = tryCatch(async (req, res) => {
             .required()
             .trim()
             .max(50)
-            .regex(/^[a-zA-Z\s]+$/)
+            .regex(/^[A-Za-z.\s]+$/)
             .custom((value, helpers) => {
                 const sanitizedValue = escape(value);
                 if (sanitizedValue !== value) {
@@ -136,7 +136,7 @@ const register = tryCatch(async (req, res) => {
                 'string.base': 'Full Name must be a string',
                 'string.empty': 'Full Name is required',
                 'string.max': 'Full Name must not exceed 50 characters',
-                'string.pattern.base': 'Full Name must contain letters only',
+                'string.pattern.base': 'Full Name must contain letters and dots only',
                 'any.required': 'Full Name is required',
                 'full-name-xss-nosql': 'Full Name contains potentially unsafe characters or invalid characters',
             })
@@ -263,7 +263,7 @@ const activate = tryCatch(async (req, res) => {
             .required()
             .trim()
             .max(50)
-            .regex(/^[a-zA-Z\s]+$/)
+            .regex(/^[A-Za-z.\s]+$/)
             .custom((value, helpers) => {
                 const sanitizedValue = escape(value);
                 if (sanitizedValue !== value) {
@@ -275,7 +275,7 @@ const activate = tryCatch(async (req, res) => {
                 'string.base': 'Full Name must be a string',
                 'string.empty': 'Full Name is required',
                 'string.max': 'Full Name must not exceed 50 characters',
-                'string.pattern.base': 'Full Name must contain letters only',
+                'string.pattern.base': 'Full Name must contain letters and dots only',
                 'any.required': 'Full Name is required',
                 'full-name-xss-nosql': 'Full Name contains potentially unsafe characters or invalid characters',
             })
@@ -397,6 +397,8 @@ const login = tryCatch(async (req, res) => {
 
     const isMatched = await user.matchPasswords(password);
     if (!isMatched) throw new ErrorResponse(401, 'Invalid password.', errorCodes.PASSWORD_NOT_MATCH_LOGIN);
+
+    if (user.isSSO) throw new ErrorResponse(401, 'The user is SSO account.', errorCodes.USER_SSO_ACCOUNT_LOGIN);
 
     const sendVerificationCodeLogin = Array.from({ length: 7 }, () => (Math.random() < 0.33 ? String.fromCharCode(Math.floor(Math.random() * 26) + 65) : Math.random() < 0.67 ? String.fromCharCode(Math.floor(Math.random() * 26) + 97) : Math.floor(Math.random() * 10))).join('');
     const hashedSendVerificationCodeLogin = await argon2.hash(sendVerificationCodeLogin);
@@ -590,6 +592,8 @@ const forgotPassword = tryCatch(async (req, res) => {
     let user = await User.findOne({ email }).populate('csrfTokenSecret');
     if (!user) throw new ErrorResponse(400, "Email is not exist.", errorCodes.EMAIL_NOT_EXIST_FORGOT_PASSWORD);
 
+    if (user.isSSO) throw new ErrorResponse(401, 'The user is SSO account.', errorCodes.USER_SSO_ACCOUNT_FORGOT_PASSWORD);
+
     await User.findOneAndUpdate({ email }, { forgotPassword: true });
 
     const tokens = new Tokens();
@@ -693,6 +697,8 @@ const resetPassword = tryCatch(async (req, res) => {
     let user = await User.findOne({ email }).populate('csrfTokenSecret');
     if (!user) throw new ErrorResponse(400, "Email is not exist.", errorCodes.EMAIL_NOT_EXIST_RESET_PASSWORD);
 
+    if (user.isSSO) throw new ErrorResponse(401, 'The user is SSO account.', errorCodes.USER_SSO_ACCOUNT_RESET_PASSWORD);
+
     const tokens = new Tokens();
     if (!tokens.verify(user.csrfTokenSecret.secret, csrfTokenObj.csrfToken)) throw new ErrorResponse(403, "You are forbidden. Invalid CSRF token.", errorCodes.INVALID_CSRF_TOKEN_RESET_PASSWORD);
     
@@ -763,7 +769,7 @@ const ssoGoogleIdentityServices = tryCatch(async (req, res) => {
     if(!token) throw new ErrorResponse(401, "No SSO JWT Token", errorCodes.NO_SSO_JWT_TOKEN_SSO_GOOGLE_IDENTITY_SERVICES);
 
     let { email, name, picture } = mongoSanitize.sanitize(jwt.decode(token));
-    if(!email || !name || !picture) throw new ErrorResponse(400, "Incomplete credential.", errorCodes.INCOMPLETE_CREDENTIAL_SSO_GOOGLE_IDENTITY_SERVICES);
+    if(!email || !name || !picture) throw new ErrorResponse(400, "Credential must have email, name, and picture.", errorCodes.INCOMPLETE_CREDENTIAL_SSO_GOOGLE_IDENTITY_SERVICES);
 
     email = xss(email);
     name = xss(name);
@@ -794,7 +800,7 @@ const ssoGoogleIdentityServices = tryCatch(async (req, res) => {
             .required()
             .trim()
             .max(50)
-            .regex(/^[a-zA-Z\s]+$/)
+            .regex(/^[A-Za-z.\s]+$/)
             .custom((value, helpers) => {
                 const sanitizedValue = escape(value);
                 if (sanitizedValue !== value) {
@@ -806,7 +812,7 @@ const ssoGoogleIdentityServices = tryCatch(async (req, res) => {
                 'string.base': 'Full Name must be a string',
                 'string.empty': 'Full Name is required',
                 'string.max': 'Full Name must not exceed 50 characters',
-                'string.pattern.base': 'Full Name must contain letters only',
+                'string.pattern.base': 'Full Name must contain letters and dots only',
                 'any.required': 'Full Name is required',
                 'full-name-xss-nosql': 'Full Name contains potentially unsafe characters or invalid characters',
             })
@@ -817,7 +823,7 @@ const ssoGoogleIdentityServices = tryCatch(async (req, res) => {
 
     const user = await User.findOne({ email }).populate('csrfTokenSecret');
     
-    // IF USER EXIST JUST LOGIN 
+    // IF USER EXIST BY EMAIL JUST LOGIN 
     if (user) {
         const tokens = new Tokens();
         const csrfTokenSecret = user.csrfTokenSecret.secret;
@@ -856,11 +862,12 @@ const ssoGoogleIdentityServices = tryCatch(async (req, res) => {
     const savedCSRFTokenSecret = await CSRFTokenSecret.create({secret: csrfTokenSecret});
     const savedProfile = await Profile.create({fullName: name, profilePicture: picture});
     const savedUser = await User.create({
-        username: generateRandomUsernameSSO(), 
+        username: name.split(" ")[0] + "_" + generateRandomUsernameSSO(), 
         email: email, 
         password: generateRandomPasswordSSO(),
         profile: [savedProfile._id],
-        csrfTokenSecret: [savedCSRFTokenSecret._id]
+        csrfTokenSecret: [savedCSRFTokenSecret._id],
+        isSSO: true
     });
 
     await CSRFTokenSecret.findByIdAndUpdate(savedCSRFTokenSecret._id, { user_id: savedUser._id });
@@ -889,7 +896,279 @@ const ssoGoogleIdentityServices = tryCatch(async (req, res) => {
     });
 
     return res.status(200).json({status: 'ok'});
+});
+
+const ssoFirebaseFacebook = tryCatch(async (req, res) => {
+    const { token } = mongoSanitize.sanitize(req.body);
+    if(!token) throw new ErrorResponse(401, "No SSO JWT Token", errorCodes.NO_SSO_JWT_TOKEN_SSO_FIREBASE_FACEBOOK);
+
+    let { email, name, picture } = mongoSanitize.sanitize(jwt.decode(token));
+    if(!email || !name || !picture) throw new ErrorResponse(400, "Credential must have email, name, and picture", errorCodes.INCOMPLETE_CREDENTIAL_SSO_FIREBASE_FACEBOOK);
     
+    email = xss(email);
+    name = xss(name);
+    picture = xss(picture);
+
+    const validationSchema = Joi.object({
+        email: Joi.string()
+            .required()
+            .trim()
+            .pattern(/^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/)
+            .email({ minDomainSegments: 2, tlds: { allow: false } })
+            .custom((value, helpers) => {
+                const sanitizedValue = escape(value);
+                if (sanitizedValue !== value) {
+                    return helpers.error('email-xss-nosql');
+                }
+                return value;
+            })
+            .messages({
+                'string.base': 'Email must be a string',
+                'string.empty': 'Email is required',
+                'string.pattern.base': 'Please enter a valid email address',
+                'string.email': 'Please enter a valid email address',
+                'any.required': 'Email is required',
+                'email-xss-nosql': 'Invalid email format or potentially unsafe characters',
+            }),
+        name: Joi.string()
+            .required()
+            .trim()
+            .max(50)
+            .regex(/^[A-Za-z.\s]+$/)
+            .custom((value, helpers) => {
+                const sanitizedValue = escape(value);
+                if (sanitizedValue !== value) {
+                    return helpers.error('full-name-xss-nosql');
+                }
+                return value;
+            })
+            .messages({
+                'string.base': 'Full Name must be a string',
+                'string.empty': 'Full Name is required',
+                'string.max': 'Full Name must not exceed 50 characters',
+                'string.pattern.base': 'Full Name must contain letters and dots only',
+                'any.required': 'Full Name is required',
+                'full-name-xss-nosql': 'Full Name contains potentially unsafe characters or invalid characters',
+            })
+    });
+
+    const { error } = validationSchema.validate({email, name});
+    if (error) throw new ErrorResponse(400, error.details[0].message, errorCodes.INVALID_CREDENTIAL_SSO_FIREBASE_FACEBOOK);
+
+    const user = await User.findOne({ email }).populate('csrfTokenSecret');
+    
+    // IF USER EXIST BY EMAIL JUST LOGIN 
+    if (user) {
+        const tokens = new Tokens();
+        const csrfTokenSecret = user.csrfTokenSecret.secret;
+        const csrfToken = tokens.create(csrfTokenSecret);
+
+        userSettings.dataToRemoveInsideUserJWTToken.forEach(eachDataToRemove => {
+            user[eachDataToRemove] = undefined;
+        });
+
+        let accessToken = jwt.sign(user.toJSON(), process.env.ACCESS_TOKEN_SECRET, {expiresIn: jwtTokensSettings.JWT_ACCESS_TOKEN_EXPIRATION_STRING});
+        
+        res.cookie('access_token', accessToken, { 
+            httpOnly: true, 
+            secure: true, 
+            sameSite: 'strict', 
+            path: '/', 
+            expires: new Date(new Date().getTime() + cookiesSettings.COOKIE_ACCESS_TOKEN_EXPIRATION)
+        });
+
+        res.cookie('csrf_token', csrfToken, { 
+            httpOnly: true, 
+            secure: true, 
+            sameSite: 'strict', 
+            path: '/', 
+            expires: new Date(new Date().getTime() + cookiesSettings.COOKIE_ACCESS_TOKEN_EXPIRATION)
+        });
+
+        return res.status(200).json({status: 'ok', user: user});
+    }
+
+    // IF USER NOT EXIST. REGISTER THE USER AFTER THAT AUTOMATICALLY LOGIN THE USER
+    const tokens = new Tokens();
+    const csrfTokenSecret = tokens.secretSync();
+    const csrfToken = tokens.create(csrfTokenSecret);
+
+    const savedCSRFTokenSecret = await CSRFTokenSecret.create({secret: csrfTokenSecret});
+    const savedProfile = await Profile.create({fullName: name, profilePicture: picture});
+    const savedUser = await User.create({
+        username: name.split(" ")[0] + "_" + generateRandomUsernameSSO(), 
+        email: email, 
+        password: generateRandomPasswordSSO(),
+        profile: [savedProfile._id],
+        csrfTokenSecret: [savedCSRFTokenSecret._id],
+        isSSO: true
+    });
+
+    await CSRFTokenSecret.findByIdAndUpdate(savedCSRFTokenSecret._id, { user_id: savedUser._id });
+    await Profile.findByIdAndUpdate(savedProfile._id, { user_id: savedUser._id });
+    
+    userSettings.dataToRemoveInsideUserJWTToken.forEach(eachDataToRemove => {
+        savedUser[eachDataToRemove] = undefined;
+    });
+
+    let accessToken = jwt.sign(savedUser.toJSON(), process.env.ACCESS_TOKEN_SECRET, {expiresIn: jwtTokensSettings.JWT_ACCESS_TOKEN_EXPIRATION_STRING});
+    
+    res.cookie('access_token', accessToken, { 
+        httpOnly: true, 
+        secure: true, 
+        sameSite: 'strict', 
+        path: '/', 
+        expires: new Date(new Date().getTime() + cookiesSettings.COOKIE_ACCESS_TOKEN_EXPIRATION)
+    });
+
+    res.cookie('csrf_token', csrfToken, { 
+        httpOnly: true, 
+        secure: true, 
+        sameSite: 'strict', 
+        path: '/', 
+        expires: new Date(new Date().getTime() + cookiesSettings.COOKIE_ACCESS_TOKEN_EXPIRATION)
+    });
+
+    return res.status(200).json({status: 'ok'});
+});
+
+const ssoFirebaseGoogle = tryCatch(async (req, res) => {
+    // NOTE FIBASE GOOGLE ACCESS TOKEN HAS EMAIL VERIFIED FIELD 
+    // WHICH SSO GOOGLE IDENTITY SERVICES DON'T HAVE THAT.
+    // SO IF YOU THINK WHY IT HAS email_verified IN THIS CONTROLLER BECAUSE ONLY FIREBASE HAVE THAT.
+
+    const { token } = mongoSanitize.sanitize(req.body);
+    if(!token) throw new ErrorResponse(401, "No SSO JWT Token", errorCodes.NO_SSO_JWT_TOKEN_SSO_FIREBASE_GOOGLE);
+
+    let { email, name, picture, email_verified } = mongoSanitize.sanitize(jwt.decode(token));
+    if(!email || !name || !picture || !email_verified) throw new ErrorResponse(400, "Credential must have email, name, picture, and email verified", errorCodes.INCOMPLETE_CREDENTIAL_SSO_FIREBASE_GOOGLE);
+    if(!email_verified) throw new ErrorResponse(400, "Email is not verified", errorCodes.EMAIL_NOT_VERIFIED_SSO_FIREBASE_GOOGLE);
+
+    email = xss(email);
+    name = xss(name);
+    picture = xss(picture);
+
+    const validationSchema = Joi.object({
+        email: Joi.string()
+            .required()
+            .trim()
+            .pattern(/^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/)
+            .email({ minDomainSegments: 2, tlds: { allow: false } })
+            .custom((value, helpers) => {
+                const sanitizedValue = escape(value);
+                if (sanitizedValue !== value) {
+                    return helpers.error('email-xss-nosql');
+                }
+                return value;
+            })
+            .messages({
+                'string.base': 'Email must be a string',
+                'string.empty': 'Email is required',
+                'string.pattern.base': 'Please enter a valid email address',
+                'string.email': 'Please enter a valid email address',
+                'any.required': 'Email is required',
+                'email-xss-nosql': 'Invalid email format or potentially unsafe characters',
+            }),
+        name: Joi.string()
+            .required()
+            .trim()
+            .max(50)
+            .regex(/^[A-Za-z.\s]+$/)
+            .custom((value, helpers) => {
+                const sanitizedValue = escape(value);
+                if (sanitizedValue !== value) {
+                    return helpers.error('full-name-xss-nosql');
+                }
+                return value;
+            })
+            .messages({
+                'string.base': 'Full Name must be a string',
+                'string.empty': 'Full Name is required',
+                'string.max': 'Full Name must not exceed 50 characters',
+                'string.pattern.base': 'Full Name must contain letters and dots only',
+                'any.required': 'Full Name is required',
+                'full-name-xss-nosql': 'Full Name contains potentially unsafe characters or invalid characters',
+            })
+    });
+
+    const { error } = validationSchema.validate({email, name});
+    if (error) throw new ErrorResponse(400, error.details[0].message, errorCodes.INVALID_CREDENTIAL_SSO_FIREBASE_GOOGLE);
+
+    const user = await User.findOne({ email }).populate('csrfTokenSecret');
+    
+    // IF USER EXIST BY EMAIL JUST LOGIN 
+    if (user) {
+        const tokens = new Tokens();
+        const csrfTokenSecret = user.csrfTokenSecret.secret;
+        const csrfToken = tokens.create(csrfTokenSecret);
+
+        userSettings.dataToRemoveInsideUserJWTToken.forEach(eachDataToRemove => {
+            user[eachDataToRemove] = undefined;
+        });
+
+        let accessToken = jwt.sign(user.toJSON(), process.env.ACCESS_TOKEN_SECRET, {expiresIn: jwtTokensSettings.JWT_ACCESS_TOKEN_EXPIRATION_STRING});
+        
+        res.cookie('access_token', accessToken, { 
+            httpOnly: true, 
+            secure: true, 
+            sameSite: 'strict', 
+            path: '/', 
+            expires: new Date(new Date().getTime() + cookiesSettings.COOKIE_ACCESS_TOKEN_EXPIRATION)
+        });
+
+        res.cookie('csrf_token', csrfToken, { 
+            httpOnly: true, 
+            secure: true, 
+            sameSite: 'strict', 
+            path: '/', 
+            expires: new Date(new Date().getTime() + cookiesSettings.COOKIE_ACCESS_TOKEN_EXPIRATION)
+        });
+
+        return res.status(200).json({status: 'ok', user: user});
+    }
+
+    // IF USER NOT EXIST. REGISTER THE USER AFTER THAT AUTOMATICALLY LOGIN THE USER
+    const tokens = new Tokens();
+    const csrfTokenSecret = tokens.secretSync();
+    const csrfToken = tokens.create(csrfTokenSecret);
+
+    const savedCSRFTokenSecret = await CSRFTokenSecret.create({secret: csrfTokenSecret});
+    const savedProfile = await Profile.create({fullName: name, profilePicture: picture});
+    const savedUser = await User.create({
+        username: name.split(" ")[0] + "_" + generateRandomUsernameSSO(), 
+        email: email, 
+        password: generateRandomPasswordSSO(),
+        profile: [savedProfile._id],
+        csrfTokenSecret: [savedCSRFTokenSecret._id],
+        isSSO: true
+    });
+
+    await CSRFTokenSecret.findByIdAndUpdate(savedCSRFTokenSecret._id, { user_id: savedUser._id });
+    await Profile.findByIdAndUpdate(savedProfile._id, { user_id: savedUser._id });
+    
+    userSettings.dataToRemoveInsideUserJWTToken.forEach(eachDataToRemove => {
+        savedUser[eachDataToRemove] = undefined;
+    });
+
+    let accessToken = jwt.sign(savedUser.toJSON(), process.env.ACCESS_TOKEN_SECRET, {expiresIn: jwtTokensSettings.JWT_ACCESS_TOKEN_EXPIRATION_STRING});
+    
+    res.cookie('access_token', accessToken, { 
+        httpOnly: true, 
+        secure: true, 
+        sameSite: 'strict', 
+        path: '/', 
+        expires: new Date(new Date().getTime() + cookiesSettings.COOKIE_ACCESS_TOKEN_EXPIRATION)
+    });
+
+    res.cookie('csrf_token', csrfToken, { 
+        httpOnly: true, 
+        secure: true, 
+        sameSite: 'strict', 
+        path: '/', 
+        expires: new Date(new Date().getTime() + cookiesSettings.COOKIE_ACCESS_TOKEN_EXPIRATION)
+    });
+
+    return res.status(200).json({status: 'ok'});
 });
 
 module.exports = {
@@ -903,5 +1182,7 @@ module.exports = {
     forgotPassword,
     resetPassword,
     accountRecoveryResetPasswordVerifyToken,
-    ssoGoogleIdentityServices
+    ssoGoogleIdentityServices,
+    ssoFirebaseFacebook,
+    ssoFirebaseGoogle
 };

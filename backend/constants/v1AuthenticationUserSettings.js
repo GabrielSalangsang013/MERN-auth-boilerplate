@@ -8,6 +8,7 @@ exports.dataToRemoveInsideUserJWTToken = [
     "csrfTokenSecret",
     "forgotPassword",
     "verificationCodeLogin",
+    "isSSO",
     "updatedAt",
     "__v",
 ]
@@ -19,6 +20,7 @@ exports.dataToRemoveRequestUser = [
     "csrfTokenSecret",
     "forgotPassword",
     "verificationCodeLogin",
+    "isSSO",
     "updatedAt",
     "__v",
 ]

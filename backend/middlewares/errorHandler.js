@@ -4,7 +4,7 @@ const errorCodes = require('../constants/v1AuthenticationErrorCodes'); // CONSTA
 const errorHandler = (error, req, res, next) => {
     // THIS IS ERROR FROM THE MONGOOSE MODEL VALIDATION USER INPUT
     if (error.name === "ValidationError") {
-        const message = Object.values(err.errors).map((val) => val.message);
+        const message = Object.values(error.errors).map((val) => val.message);
         error = new ErrorResponse(400, message, errorCodes.MONGOOSE_VALIDATION_ERROR);
     }
 

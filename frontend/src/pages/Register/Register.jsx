@@ -72,7 +72,7 @@ const Register = () => {
             .required('Full Name is required')
             .trim()
             .max(50, 'Full Name must not exceed 50 characters')
-            .matches(/^[a-zA-Z\s]+$/, 'Full Name must contain letters only')
+            .matches(/^[A-Za-z.\s]+$/, 'Full Name must contain letters and dots only')
             .test(
               'full-name-xss-nosql',
               'Full Name contains potentially unsafe characters or invalid characters',
@@ -106,7 +106,7 @@ const Register = () => {
         })
         .catch(function (error) {
             alert(error.response.data.message);
-        })
+        });
     };
 
     if(isUserActivationEmailSent) { 

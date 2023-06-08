@@ -69,6 +69,11 @@ const userSchema = new Schema({
     required: false,
     default: false
   },
+  isSSO: {
+    type: 'boolean',
+    required: true,
+    default: false
+  },
   verificationCodeLogin: { 
     type: String,
     required: false,

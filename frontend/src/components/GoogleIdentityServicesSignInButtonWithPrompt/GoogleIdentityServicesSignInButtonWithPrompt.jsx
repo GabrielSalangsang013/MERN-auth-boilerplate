@@ -14,7 +14,7 @@ const GoogleIdentityServicesSignInButtonWithPrompt = (prop) => {
         .then((response) => {
             if(response.status === 200 && response.data.status === 'ok') {
                 alert('Successfully logged in.');
-                navigate('/home')
+                navigate('/home');
             } 
         })
         .catch(function (error) {
@@ -25,7 +25,7 @@ const GoogleIdentityServicesSignInButtonWithPrompt = (prop) => {
     useEffect(() => {
         /* global google */
         google.accounts.id.initialize({
-            client_id: "135798091233-m8ddcj6h3dbia54n7hr2bc937lsq0764.apps.googleusercontent.com",
+            client_id: process.env.REACT_APP_SSO_GOOGLE_IDENITY_SERVICES_CLIENT_ID,
             callback: handleCallbackResponse
         });
 

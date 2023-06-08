@@ -53,7 +53,7 @@ const ResetPassword = () => {
         .catch(function (error) {
             alert(error.response.data.message);
             navigate('/forgot-password');
-        })
+        });
     };
 
     useEffect(() => {
@@ -70,7 +70,7 @@ const ResetPassword = () => {
             .catch(function (error) {
                 alert(error.response.data.message);
                 navigate('/forgot-password');
-            })
+            });
         }else {
             navigate('/');
         }

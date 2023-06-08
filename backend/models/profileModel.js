@@ -8,7 +8,7 @@ const profileSchema = new Schema({
     trim: true,
     required: [true, 'Full Name is required'],
     maxlength: [50, 'Full Name must not exceed 50 characters'],
-    match: [/^[a-zA-Z\s]+$/, 'Full Name must contain letters only'],
+    match: [/^[A-Za-z.\s]+$/, 'Full Name must contain letters and dots only'],
     validate: [
       {
         validator: function(value) {

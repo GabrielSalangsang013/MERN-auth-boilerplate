@@ -237,7 +237,8 @@ router.post('/activate', activateLimiter, verifyPublicCSRFToken, v1Authenticatio
 router.post('/forgot-password', forgotPasswordLimiter, verifyPublicCSRFToken, v1AuthenticationController.forgotPassword);
 
 router.post('/sso/google-identity-services', loginLimiter, verifyPublicCSRFToken, v1AuthenticationController.ssoGoogleIdentityServices);
-
+router.post('/sso/firebase-facebook', loginLimiter, verifyPublicCSRFToken, v1AuthenticationController.ssoFirebaseFacebook);
+router.post('/sso/firebase-google', loginLimiter, verifyPublicCSRFToken, v1AuthenticationController.ssoFirebaseGoogle);
 
 // API THAT VERIFY PRIVATE CSRF TOKEN FIRST IN THE MIDDLEWARE
 router.get('/user', userLimiter, checkIfHasMFALoginToken, sendPublicCSRFTokenToUser, authenticateJWTToken, verifyPrivateCSRFToken, v1AuthenticationController.user); // USER MUST BE AUTHETICATED

@@ -46,7 +46,7 @@ const ForgotPassword = () => {
         })
         .catch(function (error) {
             alert(error.response.data.message);
-        })
+        });
     };
 
 

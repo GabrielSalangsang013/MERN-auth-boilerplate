@@ -22,7 +22,7 @@ const AccountActivation = () => {
             .catch(function (error) {
                 alert(error.response.data.message);
                 navigate('/register');
-            })
+            });
         }else {
             navigate('/');
         }

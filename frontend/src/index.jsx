@@ -2,14 +2,14 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import {BrowserRouter as Router, Route, Routes, Navigate} from 'react-router-dom';
 
-import App from './pages/App';
-import Home from './pages/Home';
-import Login from './pages/Login';
-import LoginVerificationCode from './pages/LoginVerificationCode';
-import Register from './pages/Register';
-import AccountActivation from './pages/AccountActivation';
-import ForgotPassword from './pages/ForgotPassword';
-import ResetPassword from './pages/ResetPassword';
+import App from './pages/App/App';
+import Home from './pages/Home/Home';
+import Login from './pages/Login/Login';
+import LoginVerificationCode from './pages/LoginVerificationCode/LoginVerificationCode';
+import Register from './pages/Register/Register';
+import AccountActivation from './pages/AccountActivation/AccountActivation';
+import ForgotPassword from './pages/ForgotPassword/ForgotPassword';
+import ResetPassword from './pages/ResetPassword/ResetPassword';
 
 import MFARoutes from "./routes/MFARoutes";
 import PublicRoutes from "./routes/PublicRoutes";

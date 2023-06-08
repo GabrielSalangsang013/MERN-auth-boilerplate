@@ -1,7 +1,7 @@
 function generateRandomUsernameSSO() {
     const validChars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_';
-    const minLength = 4;
-    const maxLength = 20;
+    const minLength = 8;
+    const maxLength = 8;
   
     let username = '';
     const usernameLength = Math.floor(Math.random() * (maxLength - minLength + 1)) + minLength;

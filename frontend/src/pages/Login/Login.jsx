@@ -4,9 +4,9 @@ import { escape } from 'he';
 import * as Yup from 'yup';
 import DOMPurify from 'dompurify';  // FOR SANITIZING USER INPUT TO PREVENT XSS ATTACKS BEFORE SENDING TO THE BACKEND
 import axios from 'axios';
-import FirebaseGoogleSignInButton from '../components/FirebaseGoogleSignInButton/FirebaseGoogleSignInButton';
-import FirebaseFacebookSignInButton from '../components/FirebaseFacebookSignInButton/FirebaseFacebookSignInButton';
-import GoogleIdentityServicesSignInButtonWithPrompt from '../components/GoogleIdentityServicesSignInButtonWithPrompt/GoogleIdentityServicesSignInButtonWithPrompt';
+import FirebaseGoogleSignInButton from '../../components/FirebaseGoogleSignInButton/FirebaseGoogleSignInButton';
+import FirebaseFacebookSignInButton from '../../components/FirebaseFacebookSignInButton/FirebaseFacebookSignInButton';
+import GoogleIdentityServicesSignInButtonWithPrompt from '../../components/GoogleIdentityServicesSignInButtonWithPrompt/GoogleIdentityServicesSignInButtonWithPrompt';
 
 const Login = () => {
     const navigate = useNavigate();
@@ -61,7 +61,7 @@ const Login = () => {
         .then((response) => {
             if(response.status === 200 && response.data.status === 'ok') {
                 alert('Multi factor authentication login code has been sent to your email.');
-                navigate('/login/verify-code')
+                navigate('/login/verify-code');
             } 
         })
         .catch(function (error) {
