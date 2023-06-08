@@ -91,7 +91,7 @@ const Register = () => {
         let sanitizedRegisterRepeatPassword = DOMPurify.sanitize(repeatPassword);
         let sanitizedRegisterFullName = DOMPurify.sanitize(fullName);
         
-        axios.post(`${process.env.REACT_APP_API_KEY}/api/v1/authentication/register`, {
+        axios.post(`${process.env.REACT_APP_API}/api/v1/authentication/register`, {
             username: sanitizedRegisterUsername,
             email: sanitizedRegisterEmail,
             password: sanitizedRegisterPassword,

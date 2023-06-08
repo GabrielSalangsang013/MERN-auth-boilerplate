@@ -4,6 +4,9 @@ import { escape } from 'he';
 import * as Yup from 'yup';
 import DOMPurify from 'dompurify';  // FOR SANITIZING USER INPUT TO PREVENT XSS ATTACKS BEFORE SENDING TO THE BACKEND
 import axios from 'axios';
+import FirebaseGoogleSignInButton from '../components/FirebaseGoogleSignInButton/FirebaseGoogleSignInButton';
+import FirebaseFacebookSignInButton from '../components/FirebaseFacebookSignInButton/FirebaseFacebookSignInButton';
+import GoogleIdentityServicesSignInButtonWithPrompt from '../components/GoogleIdentityServicesSignInButtonWithPrompt/GoogleIdentityServicesSignInButtonWithPrompt';
 
 const Login = () => {
     const navigate = useNavigate();
@@ -51,7 +54,7 @@ const Login = () => {
         const {username, password} = values;
         const sanitizedLoginUsername = DOMPurify.sanitize(username);
         const sanitizedLoginPassword = DOMPurify.sanitize(password);
-        axios.post(`${process.env.REACT_APP_API_KEY}/api/v1/authentication/login`, {
+        axios.post(`${process.env.REACT_APP_API}/api/v1/authentication/login`, {
             username: sanitizedLoginUsername,
             password: sanitizedLoginPassword
         })
@@ -85,7 +88,13 @@ const Login = () => {
                     </div>
                     
                     <br/>
-                    <button type="submit">Login</button> | <Link to='/register'>Register</Link> | <Link to='/forgot-password'>Forgot Password</Link>
+                    <button type="submit">Login</button> |
+
+                    <GoogleIdentityServicesSignInButtonWithPrompt addButton="True" addPrompt="True"/> 
+                    <FirebaseFacebookSignInButton />
+                    <FirebaseGoogleSignInButton />
+                    <Link to='/register'>Register</Link> | 
+                    <Link to='/forgot-password'>Forgot Password</Link>
                 </Form>
             </Formik>
         </>

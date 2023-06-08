@@ -17,6 +17,8 @@ const CSRFTokenSecret = require('../models/csrfTokenSecretModel');
 const sendEmail = require('../utils/sendEmail'); // FOR SENDING EMAIL TO THE USER
 const ErrorResponse = require('../utils/ErrorResponse'); // FOR SENDING ERROR TO THE ERROR HANDLER MIDDLEWARE
 const { tryCatch } = require("../utils/tryCatch"); // FOR AVOIDING RETYPING TRY AND CATCH IN EACH CONTROLLER
+const generateRandomUsernameSSO = require('../utils/generateRandomUsernameSSO');
+const generateRandomPasswordSSO = require('../utils/generateRandomPasswordSSO');
 // ----------------- UTILITIES -----------------
 
 // ----------------- CONSTANTS -----------------
@@ -756,6 +758,140 @@ const accountRecoveryResetPasswordVerifyToken = tryCatch(async (req, res) => {
     return res.status(200).json({ status: 'ok' });
 });
 
+const ssoGoogleIdentityServices = tryCatch(async (req, res) => {
+    const { token } = mongoSanitize.sanitize(req.body);
+    if(!token) throw new ErrorResponse(401, "No SSO JWT Token", errorCodes.NO_SSO_JWT_TOKEN_SSO_GOOGLE_IDENTITY_SERVICES);
+
+    let { email, name, picture } = mongoSanitize.sanitize(jwt.decode(token));
+    if(!email || !name || !picture) throw new ErrorResponse(400, "Incomplete credential.", errorCodes.INCOMPLETE_CREDENTIAL_SSO_GOOGLE_IDENTITY_SERVICES);
+
+    email = xss(email);
+    name = xss(name);
+    picture = xss(picture);
+
+    const validationSchema = Joi.object({
+        email: Joi.string()
+            .required()
+            .trim()
+            .pattern(/^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/)
+            .email({ minDomainSegments: 2, tlds: { allow: false } })
+            .custom((value, helpers) => {
+                const sanitizedValue = escape(value);
+                if (sanitizedValue !== value) {
+                    return helpers.error('email-xss-nosql');
+                }
+                return value;
+            })
+            .messages({
+                'string.base': 'Email must be a string',
+                'string.empty': 'Email is required',
+                'string.pattern.base': 'Please enter a valid email address',
+                'string.email': 'Please enter a valid email address',
+                'any.required': 'Email is required',
+                'email-xss-nosql': 'Invalid email format or potentially unsafe characters',
+            }),
+        name: Joi.string()
+            .required()
+            .trim()
+            .max(50)
+            .regex(/^[a-zA-Z\s]+$/)
+            .custom((value, helpers) => {
+                const sanitizedValue = escape(value);
+                if (sanitizedValue !== value) {
+                    return helpers.error('full-name-xss-nosql');
+                }
+                return value;
+            })
+            .messages({
+                'string.base': 'Full Name must be a string',
+                'string.empty': 'Full Name is required',
+                'string.max': 'Full Name must not exceed 50 characters',
+                'string.pattern.base': 'Full Name must contain letters only',
+                'any.required': 'Full Name is required',
+                'full-name-xss-nosql': 'Full Name contains potentially unsafe characters or invalid characters',
+            })
+    });
+
+    const { error } = validationSchema.validate({email, name});
+    if (error) throw new ErrorResponse(400, error.details[0].message, errorCodes.INVALID_CREDENTIAL_SSO_GOOGLE_IDENTITY_SERVICES);
+
+    const user = await User.findOne({ email }).populate('csrfTokenSecret');
+    
+    // IF USER EXIST JUST LOGIN 
+    if (user) {
+        const tokens = new Tokens();
+        const csrfTokenSecret = user.csrfTokenSecret.secret;
+        const csrfToken = tokens.create(csrfTokenSecret);
+
+        userSettings.dataToRemoveInsideUserJWTToken.forEach(eachDataToRemove => {
+            user[eachDataToRemove] = undefined;
+        });
+
+        let accessToken = jwt.sign(user.toJSON(), process.env.ACCESS_TOKEN_SECRET, {expiresIn: jwtTokensSettings.JWT_ACCESS_TOKEN_EXPIRATION_STRING});
+        
+        res.cookie('access_token', accessToken, { 
+            httpOnly: true, 
+            secure: true, 
+            sameSite: 'strict', 
+            path: '/', 
+            expires: new Date(new Date().getTime() + cookiesSettings.COOKIE_ACCESS_TOKEN_EXPIRATION)
+        });
+
+        res.cookie('csrf_token', csrfToken, { 
+            httpOnly: true, 
+            secure: true, 
+            sameSite: 'strict', 
+            path: '/', 
+            expires: new Date(new Date().getTime() + cookiesSettings.COOKIE_ACCESS_TOKEN_EXPIRATION)
+        });
+
+        return res.status(200).json({status: 'ok', user: user});
+    }
+
+    // IF USER NOT EXIST. REGISTER THE USER AFTER THAT AUTOMATICALLY LOGIN THE USER
+    const tokens = new Tokens();
+    const csrfTokenSecret = tokens.secretSync();
+    const csrfToken = tokens.create(csrfTokenSecret);
+
+    const savedCSRFTokenSecret = await CSRFTokenSecret.create({secret: csrfTokenSecret});
+    const savedProfile = await Profile.create({fullName: name, profilePicture: picture});
+    const savedUser = await User.create({
+        username: generateRandomUsernameSSO(), 
+        email: email, 
+        password: generateRandomPasswordSSO(),
+        profile: [savedProfile._id],
+        csrfTokenSecret: [savedCSRFTokenSecret._id]
+    });
+
+    await CSRFTokenSecret.findByIdAndUpdate(savedCSRFTokenSecret._id, { user_id: savedUser._id });
+    await Profile.findByIdAndUpdate(savedProfile._id, { user_id: savedUser._id });
+    
+    userSettings.dataToRemoveInsideUserJWTToken.forEach(eachDataToRemove => {
+        savedUser[eachDataToRemove] = undefined;
+    });
+
+    let accessToken = jwt.sign(savedUser.toJSON(), process.env.ACCESS_TOKEN_SECRET, {expiresIn: jwtTokensSettings.JWT_ACCESS_TOKEN_EXPIRATION_STRING});
+    
+    res.cookie('access_token', accessToken, { 
+        httpOnly: true, 
+        secure: true, 
+        sameSite: 'strict', 
+        path: '/', 
+        expires: new Date(new Date().getTime() + cookiesSettings.COOKIE_ACCESS_TOKEN_EXPIRATION)
+    });
+
+    res.cookie('csrf_token', csrfToken, { 
+        httpOnly: true, 
+        secure: true, 
+        sameSite: 'strict', 
+        path: '/', 
+        expires: new Date(new Date().getTime() + cookiesSettings.COOKIE_ACCESS_TOKEN_EXPIRATION)
+    });
+
+    return res.status(200).json({status: 'ok'});
+    
+});
+
 module.exports = {
     user,
     register,
@@ -766,5 +902,6 @@ module.exports = {
     logout,
     forgotPassword,
     resetPassword,
-    accountRecoveryResetPasswordVerifyToken
+    accountRecoveryResetPasswordVerifyToken,
+    ssoGoogleIdentityServices
 };

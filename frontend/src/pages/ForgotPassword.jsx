@@ -35,7 +35,7 @@ const ForgotPassword = () => {
     const handleSubmit = (values) => {
         const {email} = values;
         let sanitizedRegisterEmail = DOMPurify.sanitize(email);
-        axios.post(`${process.env.REACT_APP_API_KEY}/api/v1/authentication/forgot-password`, {
+        axios.post(`${process.env.REACT_APP_API}/api/v1/authentication/forgot-password`, {
             email: sanitizedRegisterEmail
         })
         .then((response) => {

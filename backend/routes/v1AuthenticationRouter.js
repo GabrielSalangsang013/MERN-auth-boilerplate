@@ -236,6 +236,9 @@ router.post('/verification-code-login/logout', verificationCodeLoginLogoutLimite
 router.post('/activate', activateLimiter, verifyPublicCSRFToken, v1AuthenticationController.activate);
 router.post('/forgot-password', forgotPasswordLimiter, verifyPublicCSRFToken, v1AuthenticationController.forgotPassword);
 
+router.post('/sso/google-identity-services', loginLimiter, verifyPublicCSRFToken, v1AuthenticationController.ssoGoogleIdentityServices);
+
+
 // API THAT VERIFY PRIVATE CSRF TOKEN FIRST IN THE MIDDLEWARE
 router.get('/user', userLimiter, checkIfHasMFALoginToken, sendPublicCSRFTokenToUser, authenticateJWTToken, verifyPrivateCSRFToken, v1AuthenticationController.user); // USER MUST BE AUTHETICATED
 router.post('/logout', logoutLimiter, sendPublicCSRFTokenToUser, authenticateJWTToken, verifyPrivateCSRFToken, v1AuthenticationController.logout); // USER MUST BE AUTHETICATED

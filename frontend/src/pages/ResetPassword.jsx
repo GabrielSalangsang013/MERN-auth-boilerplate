@@ -38,7 +38,7 @@ const ResetPassword = () => {
         let sanitizedRegisterPassword = DOMPurify.sanitize(password);
         let sanitizedRegisterRepeatPassword = DOMPurify.sanitize(repeatPassword);
 
-        axios.post(`${process.env.REACT_APP_API_KEY}/api/v1/authentication/reset-password`, {
+        axios.post(`${process.env.REACT_APP_API}/api/v1/authentication/reset-password`, {
             token: token,
             csrfToken: csrfToken,
             password: sanitizedRegisterPassword,
@@ -58,7 +58,7 @@ const ResetPassword = () => {
 
     useEffect(() => {
         if(token !== null) {
-            axios.post(`${process.env.REACT_APP_API_KEY}/api/v1/authentication/account-recovery/reset-password/verify-token`, {
+            axios.post(`${process.env.REACT_APP_API}/api/v1/authentication/account-recovery/reset-password/verify-token`, {
                 token: token,
                 csrfToken: csrfToken
             })

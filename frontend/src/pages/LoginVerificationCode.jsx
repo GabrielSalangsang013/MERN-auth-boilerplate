@@ -39,7 +39,7 @@ const LoginVerificationCode = () => {
     const handleSubmit = (values) => {
         const {verificationCodeLogin} = values;
         const sanitizedVerificationCodeLogin = DOMPurify.sanitize(verificationCodeLogin);
-        axios.post(`${process.env.REACT_APP_API_KEY}/api/v1/authentication/verification-code-login`, {
+        axios.post(`${process.env.REACT_APP_API}/api/v1/authentication/verification-code-login`, {
             verificationCodeLogin: sanitizedVerificationCodeLogin
         })
         .then((response) => {
@@ -54,7 +54,7 @@ const LoginVerificationCode = () => {
     };
 
     const handleLogout = () => {
-        axios.post(`${process.env.REACT_APP_API_KEY}/api/v1/authentication/verification-code-login/logout`)
+        axios.post(`${process.env.REACT_APP_API}/api/v1/authentication/verification-code-login/logout`)
         .then((response) => {
             if(response.status === 200 && response.data.status === 'ok') {
                 alert('Successfully logged out.');

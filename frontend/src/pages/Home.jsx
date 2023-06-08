@@ -6,7 +6,7 @@ const Home = () => {
 
     function handleGetUser(e) {
         e.preventDefault();
-        axios.get(`${process.env.REACT_APP_API_KEY}/api/v1/authentication/user`)
+        axios.get(`${process.env.REACT_APP_API}/api/v1/authentication/user`)
         .then((response) => {
             if(response.status === 200 && response.data.status === 'ok') {
                 console.log(response);
@@ -20,7 +20,7 @@ const Home = () => {
 
     function handleLogout(e) {
         e.preventDefault();
-        axios.post(`${process.env.REACT_APP_API_KEY}/api/v1/authentication/logout`)
+        axios.post(`${process.env.REACT_APP_API}/api/v1/authentication/logout`)
         .then((response) => {
             if (response.status === 200 && response.data.status === 'ok') {
                 alert('Successfully logged out.');
