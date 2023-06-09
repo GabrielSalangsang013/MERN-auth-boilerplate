@@ -26,7 +26,7 @@ const RECOVERY_ACCOUNT_RESET_PASSWORD_EMAIL_HTML = (recoverAccountResetPasswordU
 
 // ------------- MULTI FACTOR AUTHENTICATION LOGIN ACCOUNT EMAIL TEMPLATE -------------
 
-const MULTI_FACTOR_AUTHENTICATION_LOGIN_ACCOUNT_CODE_EMAIL_SUBJECT = "MERN with Auth - MULTI Factor Authentication Verification Login Code ";
+const MULTI_FACTOR_AUTHENTICATION_LOGIN_ACCOUNT_CODE_EMAIL_SUBJECT = "MERN with Auth - Multi Factor Authentication Verification Login Code ";
 const MULTI_FACTOR_AUTHENTICATION_LOGIN_ACCOUNT_CODE_EMAIL_TEXT = "Here's the code for your authentication.";
 const MULTI_FACTOR_AUTHENTICATION_LOGIN_ACCOUNT_CODE_EMAIL_HTML = (sendVerificationCodeLogin) => {
     return `

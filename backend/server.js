@@ -7,6 +7,9 @@ const cors = require('cors');
 const cookieParser = require('cookie-parser');
 const mongoSanitize = require('express-mongo-sanitize');
 const helmet = require('helmet');
+const cluster = require('cluster');
+const os = require('os');
+const numCPUs = os.cpus().length;
 
 // ------------ ROUTERS --------------------
 const v1AuthenticationRouter = require('./routes/v1AuthenticationRouter');
@@ -82,16 +85,22 @@ if (process.env.NODE_ENV === "PRODUCTION") {
 
 app.use(errorHandler);
 
-mongoose.connect(process.env.MONGO_DB_URI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-})
-.then(() => {
-    app.listen(process.env.PORT, () => {
-        console.log(`File: server.js - Listening on ${process.env.PORT}`);
+if(cluster.isMaster) {
+    for(let i = 0; i < numCPUs; i++) {
+        cluster.fork();
+    }
+}else {
+    mongoose.connect(process.env.MONGO_DB_URI, {
+        useNewUrlParser: true,
+        useUnifiedTopology: true,
+    })
+    .then(() => {
+        app.listen(process.env.PORT, () => {
+            console.log(`File: server.js - Listening on ${process.env.PORT}`);
+        });
+    })
+    .catch((error) => {
+        console.log(`File: server.js - ${error}`);
+        mongoose.disconnect();
     });
-})
-.catch((error) => {
-    console.log(`File: server.js - ${error}`);
-    mongoose.disconnect();
-});
+}
