@@ -5,6 +5,7 @@ exports.dataToRemoveInsideUserJWTToken = [
     "email",
     "password",
     "profile",
+    "googleAuthentication",
     "csrfTokenSecret",
     "forgotPassword",
     "verificationCodeLogin",

@@ -28,7 +28,7 @@ const PublicRoutes = () => {
   }
 
   if (!authenticated && mfa) {
-    return <Navigate to="/login/verify-code" />
+    return <Navigate to="/login/multi-factor-authentication" />
   }
 
   if(!authenticated && !mfa) {

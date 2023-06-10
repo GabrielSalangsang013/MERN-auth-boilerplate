@@ -24,7 +24,9 @@
     "jsonwebtoken": "^9.0.0",
     "mongoose": "^6.8.3",
     "nodemailer": "^6.9.2",
+    "qrcode": "^1.5.3",
     "rate-limit-mongo": "^2.3.2",
+    "speakeasy": "^2.0.0",
     "xss": "^1.0.14"
   },
   "devDependencies": {

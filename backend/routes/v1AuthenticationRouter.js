@@ -27,6 +27,7 @@ const {
     registerLimiter,
     activateLimiter,
     forgotPasswordLimiter,
+    deleteGoogleAuthenticatorQrCodeLimiter,
     resetPasswordLimiter,
     resetPasswordVerifyTokenLimiter,
     logoutLimiter
@@ -37,8 +38,8 @@ function checkIfHasMFALoginToken(req, res, next) {
     
     if(mfa_login_token) {
         if(jwt.verify(mfa_login_token, process.env.MFA_LOGIN_TOKEN_SECRET)) {
-            const {username, profilePicture} = jwt.decode(mfa_login_token); 
-            return res.status(200).json({status: 'MFA-Mode', user: {username, profilePicture}}) 
+            const {username, profilePicture, hasGoogleAuthentication} = jwt.decode(mfa_login_token); 
+            return res.status(200).json({status: 'MFA-Mode', user: {username, profilePicture, hasGoogleAuthentication}}) 
         };
     }
     next();
@@ -94,7 +95,7 @@ function authenticateJWTToken(req, res, next) {
         }
 
         // CHECK IF HAS REQUIRED CLAIMS, OR MATCHES THE USER IN THE DATABASE
-        const checkUser = await User.findById(user._id).populate('profile').populate('csrfTokenSecret');
+        const checkUser = await User.findById(user._id).populate('profile').populate('csrfTokenSecret').populate('googleAuthentication');
 
         if (!checkUser) {
             return res.status(404).json({message: "No user found inside JWT decoded.", errorCode: errorCodes.NO_USER_FOUND_IN_DATABASE_INSIDE_JWT_DECODED_TOKEN_AUTHENTICATE_JWT_TOKEN});
@@ -161,6 +162,17 @@ function verifyPrivateCSRFToken(req, res, next) {
     userSettings.dataToRemoveRequestUser.forEach(eachDataToRemove => {
         req.user[eachDataToRemove] = undefined;
     });
+
+    if(req.user.googleAuthentication.qr_code === '') {
+        req.user.googleAuthentication = undefined;
+    }else {
+        req.user.googleAuthentication.secret = undefined;
+        req.user.googleAuthentication.encoding = undefined;
+        req.user.googleAuthentication.__v = undefined;
+        req.user.googleAuthentication.user_id = undefined;
+        req.user.googleAuthentication.otpauth_url = undefined;
+        req.user.googleAuthentication.isDisabled = undefined;
+    }   
 
     next();
 }
@@ -231,11 +243,15 @@ function sendPublicCSRFTokenToUser(req, res, next) {
 // API THAT VERIFY PUBLIC CSRF TOKEN IN THE MIDDLEWARE
 router.post('/register', registerLimiter, verifyPublicCSRFToken, v1AuthenticationController.register);
 router.post('/login', loginLimiter, verifyPublicCSRFToken, v1AuthenticationController.login);
-router.post('/verification-code-login', verificationCodeLoginLimiter, verifyPublicCSRFToken, v1AuthenticationController.verificationCodeLogin);
-router.post('/verification-code-login/logout', verificationCodeLoginLogoutLimiter, verifyPublicCSRFToken, v1AuthenticationController.verificationCodeLoginLogout);
 router.post('/activate', activateLimiter, verifyPublicCSRFToken, v1AuthenticationController.activate);
 router.post('/forgot-password', forgotPasswordLimiter, verifyPublicCSRFToken, v1AuthenticationController.forgotPassword);
 
+// API TWO/MULTI FACTOR AUTHENTICATION
+router.post('/verification-code-login', verificationCodeLoginLimiter, verifyPublicCSRFToken, v1AuthenticationController.verificationCodeLogin);
+router.post('/verification-code-login/logout', verificationCodeLoginLogoutLimiter, verifyPublicCSRFToken, v1AuthenticationController.verificationCodeLoginLogout);
+router.post('/google-authentication-code-login', verificationCodeLoginLimiter, verifyPublicCSRFToken, v1AuthenticationController.googleAuthenticationCodeLogin);
+
+// API SINGLE SIGN ON
 router.post('/sso/google-identity-services', loginLimiter, verifyPublicCSRFToken, v1AuthenticationController.ssoGoogleIdentityServices);
 router.post('/sso/firebase-facebook', loginLimiter, verifyPublicCSRFToken, v1AuthenticationController.ssoFirebaseFacebook);
 router.post('/sso/firebase-google', loginLimiter, verifyPublicCSRFToken, v1AuthenticationController.ssoFirebaseGoogle);
@@ -243,6 +259,7 @@ router.post('/sso/firebase-google', loginLimiter, verifyPublicCSRFToken, v1Authe
 // API THAT VERIFY PRIVATE CSRF TOKEN FIRST IN THE MIDDLEWARE
 router.get('/user', userLimiter, checkIfHasMFALoginToken, sendPublicCSRFTokenToUser, authenticateJWTToken, verifyPrivateCSRFToken, v1AuthenticationController.user); // USER MUST BE AUTHETICATED
 router.post('/logout', logoutLimiter, sendPublicCSRFTokenToUser, authenticateJWTToken, verifyPrivateCSRFToken, v1AuthenticationController.logout); // USER MUST BE AUTHETICATED
+router.post('/user/delete-google-authenticator-qr-code', deleteGoogleAuthenticatorQrCodeLimiter, authenticateJWTToken, verifyPrivateCSRFToken, v1AuthenticationController.deleteUserGoogleAuthenticatorQrCode)
 
 // API THAT VERIFY PRIVATE CSRF TOKEN VIA REQUEST BODY INSIDE CONTROLLER
 router.post('/reset-password', resetPasswordLimiter, v1AuthenticationController.resetPassword);

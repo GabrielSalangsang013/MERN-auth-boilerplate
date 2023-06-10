@@ -98,6 +98,11 @@ const userSchema = new Schema({
       },
     ]
   },
+  googleAuthentication: {
+    type: Schema.Types.ObjectId,
+    ref: 'GoogleAuthentication',
+    required: true
+  },
   csrfTokenSecret: {
     type: Schema.Types.ObjectId,
     ref: 'CSRFTokenSecret',

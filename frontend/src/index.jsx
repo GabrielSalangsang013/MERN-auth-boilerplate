@@ -25,7 +25,7 @@ root.render(
             <Route path='/' exact element={<App />}/>
 
             <Route element={<MFARoutes />}>
-                <Route path='/login/verify-code' exact element={<LoginVerificationCode />}/>
+                <Route path='/login/multi-factor-authentication' exact element={<LoginVerificationCode />}/>
             </Route>
 
             {/* -------------- PUBLIC ROUTES ------------ */}

@@ -61,7 +61,7 @@ const Login = () => {
         .then((response) => {
             if(response.status === 200 && response.data.status === 'ok') {
                 alert('Multi factor authentication login code has been sent to your email.');
-                navigate('/login/verify-code');
+                navigate('/login/multi-factor-authentication');
             } 
         })
         .catch(function (error) {
