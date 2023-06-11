@@ -18,10 +18,10 @@ const googleAuthenticationSchema = new Schema({
     type: String,
     required: true
   },
-  isDisabled: {
+  isScanned: {
     type: 'boolean',
     required: true,
-    default: true
+    default: false
   },
   user_id: {
     type: Schema.Types.ObjectId,

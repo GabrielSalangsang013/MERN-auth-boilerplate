@@ -28,7 +28,8 @@ const PrivateRoutes = () => {
     return <Navigate to="/" />;
   }
 
-  return <Outlet />;
+  const user = authenticated;
+  return <Outlet context={[user]}/>;
 };
 
 export default PrivateRoutes;

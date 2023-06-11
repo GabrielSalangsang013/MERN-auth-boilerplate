@@ -293,20 +293,10 @@ const activate = tryCatch(async (req, res) => {
     user = await User.findOne({ email });
     if (user)  throw new ErrorResponse(400, "Email already exist.", errorCodes.EMAIL_EXIST_REGISTER_ACTIVATE);
     
-    const googleAuthenticationSecret = speakeasy.generateSecret({name: process.env.GOOGLE_AUTHENTICATOR_NAME});
-    const googleAuthenticatorQRCode = await qrcode.toDataURL(googleAuthenticationSecret.otpauth_url);
-
     const tokens = new Tokens();
     const csrfTokenSecret = tokens.secretSync();
     const csrfToken = tokens.create(csrfTokenSecret);
 
-    const savedGoogleAuthentication = await GoogleAuthentication.create({
-        secret: googleAuthenticationSecret.ascii, 
-        encoding: 'ascii', 
-        qr_code: googleAuthenticatorQRCode,
-        otpauth_url: googleAuthenticationSecret.otpauth_url
-    });
-    
     const savedCSRFTokenSecret = await CSRFTokenSecret.create({secret: csrfTokenSecret});
     const savedProfile = await Profile.create({fullName: fullName, profilePicture: 'https://res.cloudinary.com/dgo6vnzjl/image/upload/c_fill,q_50,w_150/v1685085963/default_male_avatar_xkpekq.webp'});
     const savedUser = await User.create({
@@ -314,11 +304,9 @@ const activate = tryCatch(async (req, res) => {
         email: email, 
         password: password,
         profile: [savedProfile._id],
-        csrfTokenSecret: [savedCSRFTokenSecret._id],
-        googleAuthentication: [savedGoogleAuthentication._id]
+        csrfTokenSecret: [savedCSRFTokenSecret._id]
     });
 
-    await GoogleAuthentication.findByIdAndUpdate(savedGoogleAuthentication._id, { user_id: savedUser._id });
     await CSRFTokenSecret.findByIdAndUpdate(savedCSRFTokenSecret._id, { user_id: savedUser._id });
     await Profile.findByIdAndUpdate(savedProfile._id, { user_id: savedUser._id });
     
@@ -429,8 +417,12 @@ const login = tryCatch(async (req, res) => {
 
     let mfa_login_token;
 
-    if(user.googleAuthentication.qr_code === '') {
-        mfa_login_token = jwt.sign({_id: user._id, username: user.username, profilePicture: user.profile.profilePicture, hasGoogleAuthentication: true }, process.env.MFA_LOGIN_TOKEN_SECRET, {expiresIn: jwtTokensSettings.JWT_MFA_LOGIN_TOKEN_EXPIRATION_STRING});
+    if(user.toObject().hasOwnProperty('googleAuthentication')) {
+        if(user.googleAuthentication.isScanned) {
+            mfa_login_token = jwt.sign({_id: user._id, username: user.username, profilePicture: user.profile.profilePicture, hasGoogleAuthentication: true }, process.env.MFA_LOGIN_TOKEN_SECRET, {expiresIn: jwtTokensSettings.JWT_MFA_LOGIN_TOKEN_EXPIRATION_STRING});
+        }else {
+            mfa_login_token = jwt.sign({_id: user._id, username: user.username, profilePicture: user.profile.profilePicture, hasGoogleAuthentication: false }, process.env.MFA_LOGIN_TOKEN_SECRET, {expiresIn: jwtTokensSettings.JWT_MFA_LOGIN_TOKEN_EXPIRATION_STRING});
+        }
     }else {
         mfa_login_token = jwt.sign({_id: user._id, username: user.username, profilePicture: user.profile.profilePicture, hasGoogleAuthentication: false }, process.env.MFA_LOGIN_TOKEN_SECRET, {expiresIn: jwtTokensSettings.JWT_MFA_LOGIN_TOKEN_EXPIRATION_STRING});
     }
@@ -554,85 +546,6 @@ const verificationCodeLoginLogout = tryCatch(async (req, res) => {
     return res.status(200).json({status: 'ok'});
 });
 
-const googleAuthenticationCodeLogin = tryCatch(async (req, res) => {
-    let {googleAuthenticationCodeLogin} = mongoSanitize.sanitize(req.body);
-    let mfa_login_token = req.cookies.mfa_login_token;
-
-    if(!verificationCodeLogin || !mfa_login_token) throw new ErrorResponse(400, "Please complete the Login form.", errorCodes.INCOMPLETE_LOGIN_FORM_GOOGLE_AUTHENTICATION_CODE_LOGIN);
-
-    jwt.verify(mfa_login_token, process.env.MFA_LOGIN_TOKEN_SECRET, (error, jwtMFALoginTokenDecoded) => {
-        if(error) throw new ErrorResponse(401, "Expired or Invalid Multi Factor Authentication Login Code Token. Please login again.", errorCodes.INVALID_OR_EXPIRED_MULTI_FACTOR_AUTHENTICATION_LOGIN_CODE_GOOGLE_AUTHENTICATION_CODE_LOGIN);
-        mfa_login_token = mongoSanitize.sanitize(jwtMFALoginTokenDecoded._id);
-    });
-
-    googleAuthenticationCodeLogin = xss(googleAuthenticationCodeLogin);
-    mfa_login_token = xss(mfa_login_token);
-
-    console.log(googleAuthenticationCodeLogin);
-
-    const validationSchema = Joi.object({
-        googleAuthenticationCodeLogin: Joi.string()
-            .required()
-            .pattern(/^\d{6}$/)
-            .messages({
-                'string.base': 'Google Authentication Code Login must be a string',
-                'string.empty': 'Google Authentication Code Login is required',
-                'string.pattern.base': 'Code must be a 6-digit number',
-                'any.required': 'Google Authentication Code Login is required',
-            }),
-    });
-
-    const { error } = validationSchema.validate({googleAuthenticationCodeLogin});
-    if (error) throw new ErrorResponse(400, error.details[0].message, errorCodes.INVALID_USER_INPUT_GOOGLE_AUTHENTICATION_CODE_LOGIN);
-
-    const user = await User.findById({ _id: mfa_login_token }).populate('csrfTokenSecret').populate('googleAuthentication');
-    if (!user) throw new ErrorResponse(401, 'User not exist.', errorCodes.USER_NOT_EXIST_VERIFICATION_CODE_LOGIN);
-
-    const isVerified = speakeasy.totp.verify({
-        secret: user.googleAuthentication.secret,
-        encoding: user.googleAuthentication.encoding,
-        token: googleAuthenticationCodeLogin
-    });
-
-    if(!isVerified) throw new ErrorResponse(401, 'Invalid Google Authentication Code Login', errorCodes.INVALID_GOOGLE_AUTHENTICATION_CODE_LOGIN);
-
-    const tokens = new Tokens();
-    const csrfTokenSecret = user.csrfTokenSecret.secret;
-    const csrfToken = tokens.create(csrfTokenSecret);
-
-    userSettings.dataToRemoveInsideUserJWTToken.forEach(eachDataToRemove => {
-        user[eachDataToRemove] = undefined;
-    });
-
-    let accessToken = jwt.sign(user.toJSON(), process.env.ACCESS_TOKEN_SECRET, {expiresIn: jwtTokensSettings.JWT_ACCESS_TOKEN_EXPIRATION_STRING});
-    
-    res.cookie('access_token', accessToken, { 
-        httpOnly: true, 
-        secure: true, 
-        sameSite: 'strict', 
-        path: '/', 
-        expires: new Date(new Date().getTime() + cookiesSettings.COOKIE_ACCESS_TOKEN_EXPIRATION)
-    });
-
-    res.cookie('csrf_token', csrfToken, { 
-        httpOnly: true, 
-        secure: true, 
-        sameSite: 'strict', 
-        path: '/', 
-        expires: new Date(new Date().getTime() + cookiesSettings.COOKIE_ACCESS_TOKEN_EXPIRATION)
-    });
-
-    res.cookie('mfa_login_token', 'expiredtoken', {
-        httpOnly: true,
-        secure: true,
-        sameSite: 'strict', 
-        path: '/', 
-        expires: new Date(0)
-    });
-
-    return res.status(200).json({status: 'ok', user: user});
-});
-
 const logout = tryCatch(async (req, res) => {
     const tokens = new Tokens();
     const csrfTokenSecret = process.env.PUBLIC_CSRF_TOKEN_SECRET;
@@ -715,8 +628,110 @@ const forgotPassword = tryCatch(async (req, res) => {
     return res.status(200).json({ status: 'ok' });
 });
 
+const googleAuthenticationCodeLogin = tryCatch(async (req, res) => {
+    let {googleAuthenticationCodeLogin} = mongoSanitize.sanitize(req.body);
+    let mfa_login_token = req.cookies.mfa_login_token;
+
+    if(!verificationCodeLogin || !mfa_login_token) throw new ErrorResponse(400, "Please complete the Login form.", errorCodes.INCOMPLETE_LOGIN_FORM_GOOGLE_AUTHENTICATION_CODE_LOGIN);
+
+    jwt.verify(mfa_login_token, process.env.MFA_LOGIN_TOKEN_SECRET, (error, jwtMFALoginTokenDecoded) => {
+        if(error) throw new ErrorResponse(401, "Expired or Invalid Multi Factor Authentication Login Code Token. Please login again.", errorCodes.INVALID_OR_EXPIRED_MULTI_FACTOR_AUTHENTICATION_LOGIN_CODE_GOOGLE_AUTHENTICATION_CODE_LOGIN);
+        mfa_login_token = mongoSanitize.sanitize(jwtMFALoginTokenDecoded._id);
+    });
+
+    googleAuthenticationCodeLogin = xss(googleAuthenticationCodeLogin);
+    mfa_login_token = xss(mfa_login_token);
+
+    console.log(googleAuthenticationCodeLogin);
+
+    const validationSchema = Joi.object({
+        googleAuthenticationCodeLogin: Joi.string()
+            .required()
+            .pattern(/^\d{6}$/)
+            .messages({
+                'string.base': 'Google Authentication Code Login must be a string',
+                'string.empty': 'Google Authentication Code Login is required',
+                'string.pattern.base': 'Code must be a 6-digit number',
+                'any.required': 'Google Authentication Code Login is required',
+            }),
+    });
+
+    const { error } = validationSchema.validate({googleAuthenticationCodeLogin});
+    if (error) throw new ErrorResponse(400, error.details[0].message, errorCodes.INVALID_USER_INPUT_GOOGLE_AUTHENTICATION_CODE_LOGIN);
+
+    const user = await User.findById({ _id: mfa_login_token }).populate('csrfTokenSecret').populate('googleAuthentication');
+    if (!user) throw new ErrorResponse(401, 'User not exist.', errorCodes.USER_NOT_EXIST_VERIFICATION_CODE_LOGIN);
+
+    const isVerified = speakeasy.totp.verify({
+        secret: user.googleAuthentication.secret,
+        encoding: user.googleAuthentication.encoding,
+        token: googleAuthenticationCodeLogin
+    });
+
+    if(!isVerified) throw new ErrorResponse(401, 'Invalid Google Authentication Code Login', errorCodes.INVALID_GOOGLE_AUTHENTICATION_CODE_LOGIN);
+
+    const tokens = new Tokens();
+    const csrfTokenSecret = user.csrfTokenSecret.secret;
+    const csrfToken = tokens.create(csrfTokenSecret);
+
+    userSettings.dataToRemoveInsideUserJWTToken.forEach(eachDataToRemove => {
+        user[eachDataToRemove] = undefined;
+    });
+
+    let accessToken = jwt.sign(user.toJSON(), process.env.ACCESS_TOKEN_SECRET, {expiresIn: jwtTokensSettings.JWT_ACCESS_TOKEN_EXPIRATION_STRING});
+    
+    res.cookie('access_token', accessToken, { 
+        httpOnly: true, 
+        secure: true, 
+        sameSite: 'strict', 
+        path: '/', 
+        expires: new Date(new Date().getTime() + cookiesSettings.COOKIE_ACCESS_TOKEN_EXPIRATION)
+    });
+
+    res.cookie('csrf_token', csrfToken, { 
+        httpOnly: true, 
+        secure: true, 
+        sameSite: 'strict', 
+        path: '/', 
+        expires: new Date(new Date().getTime() + cookiesSettings.COOKIE_ACCESS_TOKEN_EXPIRATION)
+    });
+
+    res.cookie('mfa_login_token', 'expiredtoken', {
+        httpOnly: true,
+        secure: true,
+        sameSite: 'strict', 
+        path: '/', 
+        expires: new Date(0)
+    });
+
+    return res.status(200).json({status: 'ok', user: user});
+});
+
+const generateGoogleAuthenticationQRCode = tryCatch(async (req, res) => {
+    const googleAuthenticationSecret = speakeasy.generateSecret({name: process.env.GOOGLE_AUTHENTICATOR_NAME});
+    const googleAuthenticatorQRCode = await qrcode.toDataURL(googleAuthenticationSecret.otpauth_url);
+    const savedGoogleAuthentication = await GoogleAuthentication.create({
+        secret: googleAuthenticationSecret.ascii, 
+        encoding: 'ascii', 
+        qr_code: googleAuthenticatorQRCode,
+        otpauth_url: googleAuthenticationSecret.otpauth_url,
+        isScanned: false
+    });
+
+    await User.findByIdAndUpdate(req.user._id, { googleAuthentication: [savedGoogleAuthentication._id] });
+    await GoogleAuthentication.findByIdAndUpdate(savedGoogleAuthentication._id, { user_id: req.user._id });
+
+    res.status(200).json({status: 'ok', qr_code: googleAuthenticatorQRCode});
+});
+
+const scannedUserGoogleAuthenticatorQrCode = tryCatch(async (req, res) => {
+    await GoogleAuthentication.findOneAndUpdate({ user_id: req.user._id }, { isScanned: true });
+    res.status(200).json({ status: 'ok' });
+});
+
 const deleteUserGoogleAuthenticatorQrCode = tryCatch(async (req, res) => {
-    await GoogleAuthentication.findOneAndUpdate({ user_id: req.user._id }, { qr_code: '' });
+    await GoogleAuthentication.findOneAndDelete({ user_id: req.user._id });
+    await User.updateOne({ _id: req.user._id }, { $unset: { googleAuthentication: req.user.googleAuthentication._id } })
     res.status(200).json({ status: 'ok' });
 });
 
@@ -1284,8 +1299,10 @@ module.exports = {
     verificationCodeLogin,
     verificationCodeLoginLogout,
     googleAuthenticationCodeLogin,
+    generateGoogleAuthenticationQRCode,
     logout,
     forgotPassword,
+    scannedUserGoogleAuthenticatorQrCode,
     deleteUserGoogleAuthenticatorQrCode,
     resetPassword,
     accountRecoveryResetPasswordVerifyToken,

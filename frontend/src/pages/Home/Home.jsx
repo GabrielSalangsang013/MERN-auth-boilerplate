@@ -1,21 +1,19 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useOutletContext } from 'react-router-dom';
 import axios from 'axios';
 
 const Home = () => {
     const navigate = useNavigate();
     const [userGoogleAuthenticatorQRCode, setUserGoogleAuthenticatorQRCode] = useState(undefined);
+    const [displayButtonGenerateGoogleAuthenticationQRCode, setDisplayButtonGenerateGoogleAuthenticationQRCode] = useState(false);
+    const [displayButtonDeleteGoogleAuthenticationQRCode, setDisplayButtonDeleteGoogleAuthenticationQRCode] = useState(false);
+    const [user] = useOutletContext();
 
     function handleGetUser(e) {
         e.preventDefault();
         axios.get(`${process.env.REACT_APP_API}/api/v1/authentication/user`)
         .then((response) => {
             if(response.status === 200 && response.data.status === 'ok') {
-                if(response.data.user.googleAuthentication) {
-                    if(response.data.user.googleAuthentication.qr_code !== '') {
-                        setUserGoogleAuthenticatorQRCode(response.data.user.googleAuthentication.qr_code)
-                    }
-                }
                 console.log(response);
             }
         })
@@ -42,13 +40,12 @@ const Home = () => {
 
     function handleSuccessfullyScannedQRCode(e) {
         e.preventDefault();
-        axios.post(`${process.env.REACT_APP_API}/api/v1/authentication/user/delete-google-authenticator-qr-code`, {
-           googleAuthenticatorQRCode: userGoogleAuthenticatorQRCode
-        })
+        axios.post(`${process.env.REACT_APP_API}/api/v1/authentication/user/scanned-google-authentication-qr-code`)
         .then((response) => {
             if (response.status === 200 && response.data.status === 'ok') {
-                alert('Successfully deleted Google Authenticator QR Code.');
+                alert('Successfully Scanned Google Authenticator QR Code.');
                 setUserGoogleAuthenticatorQRCode(undefined);
+                setDisplayButtonDeleteGoogleAuthenticationQRCode(true);
             }
         })
         .catch(function (error) {
@@ -57,28 +54,69 @@ const Home = () => {
         });
     }
 
-    useEffect(() => {
-        axios.get(`${process.env.REACT_APP_API}/api/v1/authentication/user`)
+    function handleDeleteGoogleAuthenticationQRCode(e) {
+        e.preventDefault();
+        axios.post(`${process.env.REACT_APP_API}/api/v1/authentication/user/delete-google-authentication-qr-code`)
         .then((response) => {
-            if(response.status === 200 && response.data.status === 'ok') {
-                if(response.data.user.googleAuthentication) {
-                    if(response.data.user.googleAuthentication.qr_code !== '') {
-                        setUserGoogleAuthenticatorQRCode(response.data.user.googleAuthentication.qr_code)
-                    }
-                }
-            }
+             if (response.status === 200 && response.data.status === 'ok') {
+                alert('Successfully Deleted Google Authenticator QR Code.');
+                setDisplayButtonGenerateGoogleAuthenticationQRCode(true);
+                setDisplayButtonDeleteGoogleAuthenticationQRCode(false);
+             }
         })
-        .catch((error) => {
-            alert(error.response.data.message);
-            navigate('/login');
+        .catch(function (error) {
+             alert(error.response.data.message);
+             navigate('/login');
         });
+    }
+
+    function handleGenerateGoogleAuthenticationQRCode(e) {
+        e.preventDefault();
+        axios.post(`${process.env.REACT_APP_API}/api/v1/authentication/user/generate-google-authentication-qr-code`)
+        .then((response) => {
+             if (response.status === 200 && response.data.status === 'ok') {
+                alert('Successfully Generated Google Authenticator QR Code.');
+                setUserGoogleAuthenticatorQRCode(response.data.qr_code);
+                setDisplayButtonGenerateGoogleAuthenticationQRCode(false);
+             }
+        })
+        .catch(function (error) {
+             alert(error.response.data.message);
+             navigate('/login');
+        });
+    }
+
+    useEffect(() => {
+        if(!user.hasOwnProperty('googleAuthentication')) {
+            setDisplayButtonGenerateGoogleAuthenticationQRCode(true);
+        }
+
+        if(user.hasOwnProperty('googleAuthentication') && !user.googleAuthentication.isScanned) {
+            setUserGoogleAuthenticatorQRCode(user.googleAuthentication.qr_code);
+        }
+
+        if(user.hasOwnProperty('googleAuthentication') && user.googleAuthentication.isScanned) {
+            setDisplayButtonDeleteGoogleAuthenticationQRCode(true);
+        }
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     return (
         <>
             <button type="button" onClick={handleGetUser}>Get User</button>
-            <button type="button" onClick={handleLogout}>Logout</button>  
+            <button type="button" onClick={handleLogout}>Logout</button>
+            {
+                displayButtonDeleteGoogleAuthenticationQRCode && 
+                <button type="button" onClick={handleDeleteGoogleAuthenticationQRCode}>
+                    Delete Google Authentication QR Code
+                </button>
+            }
+            {
+                displayButtonGenerateGoogleAuthenticationQRCode && 
+                <button type="button" onClick={handleGenerateGoogleAuthenticationQRCode}>
+                    Generate Google Authentication QR Code
+                </button>
+            }
             {
                 userGoogleAuthenticatorQRCode !== undefined && 
                 <div>

@@ -78,17 +78,6 @@ const forgotPasswordLimiter = rateLimit({
     message: 'Too many forgot password requests, please try again later.',
 });
 
-const deleteGoogleAuthenticatorQrCodeLimiter = rateLimit({
-  store: new MongoStore({
-    uri: process.env.MONGO_DB_URI_LIMITER, // MongoDB connection URI
-    collectionName: 'delete-google-authenticator-qr-code-limiter', // MongoDB collection to store rate limit data
-    expireTimeMs: 60 * 1000, // Time window in milliseconds
-    errorHandler: console.error, // Optional error handler
-  }),
-  max: 100, // Maximum number of requests per time window
-  message: 'Too many delete google authenticator qr code requests, please try again later.',
-});
-
 const resetPasswordLimiter = rateLimit({
     store: new MongoStore({
       uri: process.env.MONGO_DB_URI_LIMITER, // MongoDB connection URI
@@ -122,6 +111,39 @@ const logoutLimiter = rateLimit({
     message: 'Too many logout requests, please try again later.',
 });
 
+const deleteGoogleAuthenticatorQrCodeLimiter = rateLimit({
+  store: new MongoStore({
+    uri: process.env.MONGO_DB_URI_LIMITER, // MongoDB connection URI
+    collectionName: 'delete-google-authenticator-qr-code-limiter', // MongoDB collection to store rate limit data
+    expireTimeMs: 60 * 1000, // Time window in milliseconds
+    errorHandler: console.error, // Optional error handler
+  }),
+  max: 100, // Maximum number of requests per time window
+  message: 'Too many delete google authenticator qr code requests, please try again later.',
+});
+
+const generateGoogleAuthenticationQRCodeLimiter = rateLimit({
+  store: new MongoStore({
+    uri: process.env.MONGO_DB_URI_LIMITER, // MongoDB connection URI
+    collectionName: 'generate-google-authentication-qr-code-limiter', // MongoDB collection to store rate limit data
+    expireTimeMs: 60 * 1000, // Time window in milliseconds
+    errorHandler: console.error, // Optional error handler
+  }),
+  max: 100, // Maximum number of requests per time window
+  message: 'Too many generate google authentication qr code limiter requests, please try again later.',
+});
+
+const scannedGoogleAuthenticatorQrCodeLimiter = rateLimit({
+  store: new MongoStore({
+    uri: process.env.MONGO_DB_URI_LIMITER, // MongoDB connection URI
+    collectionName: 'scanned-google-authentication-qr-code-limiter', // MongoDB collection to store rate limit data
+    expireTimeMs: 60 * 1000, // Time window in milliseconds
+    errorHandler: console.error, // Optional error handler
+  }),
+  max: 100, // Maximum number of requests per time window
+  message: 'Too many scanned google authentication qr code limiter requests, please try again later.',
+});
+
 module.exports = {
     userLimiter,
     loginLimiter,
@@ -130,8 +152,10 @@ module.exports = {
     registerLimiter,
     activateLimiter,
     forgotPasswordLimiter,
-    deleteGoogleAuthenticatorQrCodeLimiter,
     resetPasswordLimiter,
     resetPasswordVerifyTokenLimiter,
-    logoutLimiter
+    logoutLimiter,
+    deleteGoogleAuthenticatorQrCodeLimiter,
+    generateGoogleAuthenticationQRCodeLimiter,
+    scannedGoogleAuthenticatorQrCodeLimiter
 }

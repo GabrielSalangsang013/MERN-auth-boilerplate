@@ -3,7 +3,7 @@ import axios from 'axios';
 export const isAuthenticated = async () => {
   try {
     const response = await axios.get(`${process.env.REACT_APP_API}/api/v1/authentication/user`);
-    if (response.status === 200 && response.data.status === 'ok') return true;
+    if (response.status === 200 && response.data.status === 'ok') return response.data.user;
     return false;
   } catch (error) {
     return false;

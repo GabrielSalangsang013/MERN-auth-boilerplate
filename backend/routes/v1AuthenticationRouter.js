@@ -30,7 +30,9 @@ const {
     deleteGoogleAuthenticatorQrCodeLimiter,
     resetPasswordLimiter,
     resetPasswordVerifyTokenLimiter,
-    logoutLimiter
+    logoutLimiter,
+    generateGoogleAuthenticationQRCodeLimiter,
+    scannedGoogleAuthenticatorQrCodeLimiter
 } = require('../middlewares/v1AuthenticationLimiter');
 
 function checkIfHasMFALoginToken(req, res, next) {
@@ -163,17 +165,24 @@ function verifyPrivateCSRFToken(req, res, next) {
         req.user[eachDataToRemove] = undefined;
     });
 
-    if(req.user.googleAuthentication.qr_code === '') {
-        req.user.googleAuthentication = undefined;
-    }else {
+    if(req.user.toObject().hasOwnProperty('googleAuthentication') && !req.user.googleAuthentication.isScanned) {
         req.user.googleAuthentication.secret = undefined;
         req.user.googleAuthentication.encoding = undefined;
         req.user.googleAuthentication.__v = undefined;
         req.user.googleAuthentication.user_id = undefined;
         req.user.googleAuthentication.otpauth_url = undefined;
-        req.user.googleAuthentication.isDisabled = undefined;
-    }   
+        req.user.googleAuthentication.isScanned = undefined;
+    }
 
+    if(req.user.toObject().hasOwnProperty('googleAuthentication') && req.user.googleAuthentication.isScanned) {
+        req.user.googleAuthentication.qr_code = undefined;
+        req.user.googleAuthentication.secret = undefined;
+        req.user.googleAuthentication.encoding = undefined;
+        req.user.googleAuthentication.__v = undefined;
+        req.user.googleAuthentication.user_id = undefined;
+        req.user.googleAuthentication.otpauth_url = undefined;
+    }
+    
     next();
 }
 
@@ -259,7 +268,9 @@ router.post('/sso/firebase-google', loginLimiter, verifyPublicCSRFToken, v1Authe
 // API THAT VERIFY PRIVATE CSRF TOKEN FIRST IN THE MIDDLEWARE
 router.get('/user', userLimiter, checkIfHasMFALoginToken, sendPublicCSRFTokenToUser, authenticateJWTToken, verifyPrivateCSRFToken, v1AuthenticationController.user); // USER MUST BE AUTHETICATED
 router.post('/logout', logoutLimiter, sendPublicCSRFTokenToUser, authenticateJWTToken, verifyPrivateCSRFToken, v1AuthenticationController.logout); // USER MUST BE AUTHETICATED
-router.post('/user/delete-google-authenticator-qr-code', deleteGoogleAuthenticatorQrCodeLimiter, authenticateJWTToken, verifyPrivateCSRFToken, v1AuthenticationController.deleteUserGoogleAuthenticatorQrCode)
+router.post('/user/scanned-google-authentication-qr-code', scannedGoogleAuthenticatorQrCodeLimiter, authenticateJWTToken, verifyPrivateCSRFToken, v1AuthenticationController.scannedUserGoogleAuthenticatorQrCode)
+router.post('/user/delete-google-authentication-qr-code', deleteGoogleAuthenticatorQrCodeLimiter, authenticateJWTToken, verifyPrivateCSRFToken, v1AuthenticationController.deleteUserGoogleAuthenticatorQrCode)
+router.post('/user/generate-google-authentication-qr-code', generateGoogleAuthenticationQRCodeLimiter, authenticateJWTToken, verifyPrivateCSRFToken, v1AuthenticationController.generateGoogleAuthenticationQRCode);
 
 // API THAT VERIFY PRIVATE CSRF TOKEN VIA REQUEST BODY INSIDE CONTROLLER
 router.post('/reset-password', resetPasswordLimiter, v1AuthenticationController.resetPassword);
