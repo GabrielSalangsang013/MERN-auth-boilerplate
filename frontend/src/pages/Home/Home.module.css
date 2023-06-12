@@ -10,11 +10,9 @@
 
 .header {
     width: 100%;
-    height: 90px;
-    display: flex;
-    justify-content: space-between;
-    padding: 0px 3rem;    
-    align-items: center;
+    height: 4rem;
+    background-color: #1f2937;
+    border: 1px solid #323c4b;
 }
 
 .logo_container {
@@ -25,7 +23,7 @@
 }
 
 .logo {
-    width: 40px;
+    width: 32px;
     object-fit: cover;
 }
 
@@ -34,22 +32,21 @@
     display: flex;
     justify-content: space-around;
     align-items: center;
-    font-size: 0.875rem;
 }
 
 .link {
     font-size: .875rem;
+    line-height: 1.25rem;
     padding: 0px 10px;
     color: #9ba2ae;
     transition: 0.1s;
-    cursor: pointer;
 }
 
 .link:hover {
     color: white;
 }
 
-.login_verification_code_form, .activation_link_container {
+.login_form {
     width: 350px;
     height: 500px;
     flex-direction: column;
@@ -63,7 +60,7 @@
     align-items: center;
 }
 
-.login_verification_code_form_title, .activation_link_container_title {
+.login_form_title {
     text-align: center;
     font-family: 'Inter';
     font-style: normal;
@@ -72,7 +69,7 @@
     color: #e1e7ef;
 }
 
-.login_verification_code_form_subtitle, .activation_link_container_subtitle {
+.login_form_subtitle {
     text-align: center;
     font-family: 'Inter';
     font-style: normal;
@@ -84,7 +81,7 @@
     margin-bottom: 20px;
 }
 
-.login_verification_code_form_input {
+.login_form_input {
     background: #111827;
     border-radius: 5px;
     margin-top: 10px;
@@ -110,7 +107,7 @@
     color: #7A889D;
 }
 
-.login_verification_code_form_input_error {
+.login_form_input_error {
     font-size: .875rem;
     line-height: 1.25rem;
     margin-top: 5px;
@@ -118,7 +115,7 @@
     color: rgb(206, 14, 0);
 }
 
-.login_verification_code_form_submit {
+.login_form_submit {
     background: #F8FAFC;
     border-radius: 5px;
     font-size: .875rem;
@@ -138,7 +135,7 @@
 }
 
 
-.login_verification_code_form_link_login, .activation_link_login {
+.login_form_link_forgot_password {
     margin-top: 20px;
     display: block;
     font-family: 'Inter';
@@ -150,11 +147,7 @@
     color: #5DB9FC;
 }
 
-.activation_link_login {
-    text-align: center;
-}
-
-.login_verification_code_form_submit:hover {
+.login_form_submit:hover {
     opacity: 0.9;
 }
 
@@ -184,42 +177,101 @@
     color: hsl(215.4 16.3% 56.9%);
 }
 
-.button_dark {
-    background: #111827;
-    border-radius: 5px;
-    margin-top: 15px;
-    padding-top: 0.5rem;
-    padding-bottom: 0.5rem;
-    padding-left: 0.75rem;
-    padding-right: 0.75rem;
-    border: 0 solid #e5e7eb;
-    border-width: 1px;
-    border-color: hsl(216 34% 17%);
-    font-size: .875rem;
-    line-height: 1.25rem;
-    height: 2.5rem;
+.profile_picture {
+    border-radius: 3px;
+}
+
+.header_dropdown {
+    background-color: transparent !important;
+    border: none;
     display: flex;
     justify-content: center;
     align-items: center;
-    gap: 8px;
-    transition: 0.1s;
-    font-weight: 500;
-    width: 100%;
-
-}
-
-.button_dark:hover {
     cursor: pointer;
-    background-color: #1D283A;
+    font-size: .875rem;
 }
 
-.profile_picture {
+.header_dropdown_down_arrow {
+    width: 1rem;
+    height: 1rem;
+    margin-left: 0.25rem;
+    fill: white;
+}
+
+
+.flex_header_container {
+    width: min(100% - 2rem, 1216px);
+    margin: auto;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    height: 100%;
+}
+
+.flex_main_container {
+    width: min(100% - 2rem, 1216px);
+    margin: auto;
+}
+
+.box_message {
+    padding: 1.5rem;
+    background-color: #1f2937;
+    width: 100%;
+    margin-top: 3rem;
+    margin-bottom: 3rem;
+    border-radius: 0.5rem;
+}
+
+.header_drop_down_container {
+    position: relative;
+    display: flex;
+    justify-content: flex-end
+}
+
+.header_dropdown_menu {
+    width: 200px;
+    background-color: #323c4b;
+    position: absolute;
+    transform: translateY(38px);
     border-radius: 3px;
+    box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.148);
+    padding-top: 0.25rem;
+    padding-bottom: 0.25rem;
+}
+
+.header_drodown_menu_list {
+    list-style-type: none;
+}
+
+.header_dropdown_menu_each_list {
+    width: 100%;
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+    padding-left: 1rem;
+    padding-right: 1rem;
+    font-size: .875rem;
+    color: rgb(209 213 219);
+    background-color: #323c4b;
+    transition: 0.1s;
+    cursor: pointer;
+}
+
+.header_dropdown_menu_each_list:hover {
+    background-color: #232a34;
 }
 
 @media screen and (max-width: 768px) {
     .header {
         padding: 0px 1.5rem;
+    }
+
+    .flex_header_container {
+        width: 100%;
+        margin: auto;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        height: 100%;
     }
 
     .hero_container {

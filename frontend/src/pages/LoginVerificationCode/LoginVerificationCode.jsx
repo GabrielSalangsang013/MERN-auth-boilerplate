@@ -123,7 +123,7 @@ const LoginVerificationCode = () => {
                             <img className={`${style.logo}`} src={logo} alt="Logo" />
                         </div>
                         <div className={`${style.nav_links}`}>
-                            <img src={user.profilePicture} alt="nothing" width="25" /> &nbsp; {user.username}
+                            <img className={`${style.profile_picture}`} src={user.profilePicture} alt="nothing" width="25" /> &nbsp; {user.username}
                             <span onClick={handleLogout} className={`${style.link}`}>Logout</span>
                         </div>
                     </header>
@@ -162,7 +162,7 @@ const LoginVerificationCode = () => {
                             <img className={`${style.logo}`} src={logo} alt="Logo" />
                         </div>
                         <div className={`${style.nav_links}`}>
-                            <img src={user.profilePicture} alt="nothing" width="25" /> &nbsp; {user.username}
+                            <img className={`${style.profilePicture}`} src={user.profilePicture} alt="nothing" width="25" /> &nbsp; {user.username}
                             <span onClick={handleLogout} className={`${style.link}`}>Logout</span>
                         </div>
                     </header>
