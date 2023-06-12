@@ -4,9 +4,11 @@ import { escape } from 'he';
 import * as Yup from 'yup';
 import DOMPurify from 'dompurify';  // FOR SANITIZING USER INPUT TO PREVENT XSS ATTACKS BEFORE SENDING TO THE BACKEND
 import axios from 'axios';
+import style from './Login.module.css';
 import FirebaseGoogleSignInButton from '../../components/FirebaseGoogleSignInButton/FirebaseGoogleSignInButton';
 import FirebaseFacebookSignInButton from '../../components/FirebaseFacebookSignInButton/FirebaseFacebookSignInButton';
 import GoogleIdentityServicesSignInButtonWithPrompt from '../../components/GoogleIdentityServicesSignInButtonWithPrompt/GoogleIdentityServicesSignInButtonWithPrompt';
+import logo from '../../assets/logo-header.png';
 
 const Login = () => {
     const navigate = useNavigate();
@@ -71,32 +73,51 @@ const Login = () => {
 
     return (
         <>
-            <Formik initialValues={initialValues} validationSchema={validationSchema} onSubmit={handleSubmit}>
-                <Form>
-                    <h1>Login Form</h1>
-
-                    <div>
-                        <label htmlFor="username">Username: </label>
-                        <Field type="text" id="username" name="username"/>
-                        <ErrorMessage name="username" component="div" />
+            <div className={`${style.container}`}>
+                
+                <header className={`${style.header}`}>
+                    <div className={`${style.logo_container}`}>
+                        <Link to='/' className={`${style.link}`}>
+                            <img className={`${style.logo}`} src={logo} alt="Logo" />
+                        </Link>
                     </div>
-
-                    <div>
-                        <label htmlFor="password">Password: </label>
-                        <Field type="password" id="password" name="password"/>
-                        <ErrorMessage name="password" component="div" />
+                    <div className={`${style.nav_links}`}>
+                        <Link to='/register' className={`${style.link}`}>Register</Link>
                     </div>
-                    
-                    <br/>
-                    <button type="submit">Login</button> |
+                </header>
+                
+                
+                <main className={`${style.main}`}>
+                    <div className={`${style.login_form}`}>
+                    <Formik initialValues={initialValues} validationSchema={validationSchema} onSubmit={handleSubmit}>
+                        <Form>
+                            <h1 className={`${style.login_form_title}`}>Welcome to Login</h1>
+                            <p className={`${style.login_form_subtitle}`}>Enter your username and password to login</p>
 
-                    <GoogleIdentityServicesSignInButtonWithPrompt addButton="True" addPrompt="True"/> 
-                    <FirebaseFacebookSignInButton />
-                    <FirebaseGoogleSignInButton />
-                    <Link to='/register'>Register</Link> | 
-                    <Link to='/forgot-password'>Forgot Password</Link>
-                </Form>
-            </Formik>
+                            <Field className={`${style.login_form_input}`} placeholder='Enter your username' type="text" id="username" name="username"/>
+                            <ErrorMessage name="username" component="div" className={`${style.login_form_input_error}`}/>
+                            <Field className={`${style.login_form_input}`} placeholder='Enter your password' type="password" id="password" name="password"/>
+                            <ErrorMessage name="password" component="div" className={`${style.login_form_input_error}`}/>    
+                            <button className={`${style.login_form_submit}`} type="submit">Sign In</button>
+                        
+                            <Link className={`${style.login_form_link_forgot_password}`} to="/forgot-password">Forgot password?</Link>
+                            
+                            <div className={`${style.overline_container}`}>
+                                <div className={`${style.overline}`}></div>
+                                <div className={`${style.overline_text}`}>
+                                    <span>OR CONTINUE WITH</span>
+                                </div>
+                            </div>
+
+                            <GoogleIdentityServicesSignInButtonWithPrompt addButton="True" addPrompt="True"/> 
+                            <FirebaseFacebookSignInButton />
+                            <FirebaseGoogleSignInButton />
+                        </Form>
+                    </Formik>
+                    </div>
+                </main>
+                
+            </div>
         </>
     )
 }

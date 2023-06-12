@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Navigate, Outlet } from 'react-router-dom';
 import { isMFAMode } from '../helpers/auth'; // Import your authentication helper
+import Loading from '../components/Loading/Loading';
 
 const PublicRoutes = () => {
   const [loading, setLoading] = useState(true);
@@ -21,7 +22,7 @@ const PublicRoutes = () => {
   }, []);
 
   if (loading) {
-    return <h1>Loading...</h1>; // or any loading indicator/component
+    return <Loading />; // or any loading indicator/component
   }
 
   if (mfaMode) {

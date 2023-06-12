@@ -2,8 +2,10 @@ import { useNavigate } from 'react-router-dom';
 import { authentication } from '../../config/firebase-config';
 import { signInWithPopup, GoogleAuthProvider } from "firebase/auth";
 import { GoogleLoginButton } from "react-social-login-buttons";
+import style from './FirebaseGoogleSignInButton.module.css';
 import DOMPurify from 'dompurify';  // FOR SANITIZING USER INPUT TO PREVENT XSS ATTACKS BEFORE SENDING TO THE BACKEND
 import axios from 'axios';
+import google from '../../assets/google.png';
 
 const FirebaseGoogleSignInButton = () => {
     const navigate = useNavigate();
@@ -33,7 +35,10 @@ const FirebaseGoogleSignInButton = () => {
 
     return (
         <>
-            <GoogleLoginButton onClick={signInWithGoogle} />
+            <button onClick={signInWithGoogle} className={`${style.sso_button_google}`} type="button">
+                <img className={`${style.sso_button_google_icon}`} src={google} alt="" />
+                Google
+            </button>
         </>
     )
 }

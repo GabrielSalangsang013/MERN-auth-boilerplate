@@ -2,8 +2,10 @@ import { useNavigate } from 'react-router-dom';
 import { authentication } from '../../config/firebase-config';
 import { signInWithPopup, FacebookAuthProvider } from "firebase/auth";
 import { FacebookLoginButton } from "react-social-login-buttons";
+import style from './FirebaseFacebookSignInButton.module.css';
 import DOMPurify from 'dompurify';  // FOR SANITIZING USER INPUT TO PREVENT XSS ATTACKS BEFORE SENDING TO THE BACKEND
 import axios from 'axios';
+import facebook from '../../assets/facebook.png';
 
 const FirebaseFacebookSignInButton = () => {
     const navigate = useNavigate();
@@ -33,7 +35,10 @@ const FirebaseFacebookSignInButton = () => {
 
     return (
         <>
-            <FacebookLoginButton onClick={signInWithFacebook} />
+            <button onClick={signInWithFacebook} className={`${style.sso_button_facebook}`} type="button">
+                <img className={`${style.sso_button_facebook_icon}`} src={facebook} alt="" />
+                Facebook
+            </button>
         </>
     )
 }

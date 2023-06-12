@@ -5,6 +5,8 @@ import { escape } from 'he';
 import * as Yup from 'yup';
 import DOMPurify from 'dompurify';  // FOR SANITIZING USER INPUT TO PREVENT XSS ATTACKS BEFORE SENDING TO THE BACKEND
 import axios from 'axios';
+import style from './ForgotPassword.module.css';
+import logo from '../../assets/logo-header.png';
 
 const ForgotPassword = () => {
     const [isUserAccountRecoveryResetPasswordEmailSent, setIsUserAccountRecoveryResetPasswordEmailSent] = useState(false);
@@ -53,27 +55,64 @@ const ForgotPassword = () => {
     if(isUserAccountRecoveryResetPasswordEmailSent) {
         return (
             <>
-                <h1>Email has been sent to recover your account by updating your password.</h1>
+                <div className={`${style.container}`}>
+                    <header className={`${style.header}`}>
+                        <div className={`${style.logo_container}`}>
+                            <Link to='/' className={`${style.link}`}>
+                                <img className={`${style.logo}`} src={logo} alt="Logo" />
+                            </Link>
+                        </div>
+                        <div className={`${style.nav_links}`}>
+                            <Link to='/login' className={`${style.link}`}>Login</Link>
+                            <Link to='/register' className={`${style.link}`}>Register</Link>
+                        </div>
+                    </header>
+                    
+                    
+                    <main className={`${style.main}`}>
+                        <div className={`${style.recovery_account_link}`}>
+                            <h1 className={`${style.recovery_account_link_title}`}>Recovery Account Email Sent</h1>
+                            <p className={`${style.recovery_account_link_subtitle}`}>Email has been sent to recover your account by updating your password.</p>
+                            <Link className={`${style.recovery_account_link_login}`} to="/login">Go back to login page</Link>
+                        </div>
+                    </main>
+                </div>
             </>
         )
     }
 
     return (
         <>
-            <Formik initialValues={initialValues} validationSchema={validationSchema} onSubmit={handleSubmit}>
-                <Form>
-                    <h1>Recovery Account Form</h1>
-
-                    <div>
-                        <label htmlFor="email">Email: </label>
-                        <Field type="email" id="email" name="email" />
-                        <ErrorMessage name="email" component="div" />
+            <div className={`${style.container}`}>
+                <header className={`${style.header}`}>
+                    <div className={`${style.logo_container}`}>
+                        <Link to='/' className={`${style.link}`}>
+                            <img className={`${style.logo}`} src={logo} alt="Logo" />
+                        </Link>
                     </div>
+                    <div className={`${style.nav_links}`}>
+                        <Link to='/login' className={`${style.link}`}>Login</Link>
+                        <Link to='/register' className={`${style.link}`}>Register</Link>
+                    </div>
+                </header>
+                
+                
+                <main className={`${style.main}`}>
+                    <div className={`${style.forgot_password_form}`}>
+                    <Formik initialValues={initialValues} validationSchema={validationSchema} onSubmit={handleSubmit}>
+                        <Form>
+                            <h1 className={`${style.forgot_password_form_title}`}>Recovery Account Form</h1>
+                            <p className={`${style.forgot_password_form_subtitle}`}>You forgot your password? Don't worry enter your email here to reset your passwrd.</p>
 
-                    <br/>
-                    <button type="submit">Submit</button> | <Link to='/login'>Login</Link> | <Link to='/register'>Register</Link>
-                </Form>
-            </Formik>
+                            <Field className={`${style.forgot_password_form_input}`} placeholder='Enter your email' type="email" id="email" name="email"/>
+                            <ErrorMessage name="email" component="div" className={`${style.forgot_password_form_input_error}`}/>
+                            
+                            <button className={`${style.forgot_password_form_submit}`} type="submit">Submit</button>
+                        </Form>
+                    </Formik>
+                    </div>
+                </main>
+            </div>
         </>
     )
 }

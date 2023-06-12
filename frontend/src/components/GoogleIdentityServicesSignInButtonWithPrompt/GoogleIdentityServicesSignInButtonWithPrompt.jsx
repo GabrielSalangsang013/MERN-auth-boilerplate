@@ -32,7 +32,7 @@ const GoogleIdentityServicesSignInButtonWithPrompt = (prop) => {
         if(prop.addButton === 'True') {
             google.accounts.id.renderButton(
                 document.getElementById("signInDiv"),
-                { theme: "outline", size:"large" }
+                {type: 'standard', theme: "filled_black", size:"large", width: '350', logo_alignment: 'center'}
             );
         }
         

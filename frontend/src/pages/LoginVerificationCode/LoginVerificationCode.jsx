@@ -5,6 +5,8 @@ import { escape } from 'he';
 import * as Yup from 'yup';
 import DOMPurify from 'dompurify';  // FOR SANITIZING USER INPUT TO PREVENT XSS ATTACKS BEFORE SENDING TO THE BACKEND
 import axios from 'axios';
+import style from './LoginVerificationCode.module.css';
+import logo from '../../assets/logo-header.png';
 
 const LoginVerificationCode = () => {
     const navigate = useNavigate();
@@ -115,48 +117,79 @@ const LoginVerificationCode = () => {
         <>
             { !useGoogleAuthenticationForm && 
             <>
-                <Formik initialValues={initialValues} validationSchema={validationSchema} onSubmit={handleSubmit}>
-                    <Form>
-                        <h1>Multi Factor Authencation Login Code Form</h1>
-                        <div>
+                <div className={`${style.container}`}>
+                    <header className={`${style.header}`}>
+                        <div className={`${style.logo_container}`}>
+                            <img className={`${style.logo}`} src={logo} alt="Logo" />
+                        </div>
+                        <div className={`${style.nav_links}`}>
                             <img src={user.profilePicture} alt="nothing" width="25" /> &nbsp; {user.username}
+                            <span onClick={handleLogout} className={`${style.link}`}>Logout</span>
                         </div>
-                        <br/>
-                        <div>
-                            <label htmlFor="verificationCodeLogin">Verification Code: </label>
-                            <Field type="text" id="verificationCodeLogin" name="verificationCodeLogin" autoComplete="off" />
-                            <ErrorMessage name="verificationCodeLogin" component="div" />
+                    </header>
+                    
+                    
+                    <main className={`${style.main}`}>
+                        <div className={`${style.login_verification_code_form}`}>
+                        <Formik initialValues={initialValues} validationSchema={validationSchema} onSubmit={handleSubmit}>
+                            <Form>
+                                <h1 className={`${style.login_verification_code_form_title}`}>MFA - Login Code</h1>
+                                <p className={`${style.login_verification_code_form_subtitle}`}>Please enter your login code to verify</p>
+
+                                <Field className={`${style.login_verification_code_form_input}`} type="text" id="verificationCodeLogin" placeholder='Enter your verification code login' name="verificationCodeLogin" autoComplete="off" />
+                                <ErrorMessage name="verificationCodeLogin" component="div" className={`${style.login_verification_code_form_input_error}`}/>
+
+                                <button className={`${style.login_verification_code_form_submit}`} type="submit">Submit</button>
+                                { showButtonDisplayGoogleAuthenticationForm && 
+                                <>
+                                    <button onClick={switchFormToGoogleAuthenticationForm} className={`${style.button_dark}`} type="button">
+                                        Use Google Authenticator
+                                    </button>
+                                </>}
+                            </Form>
+                        </Formik>
                         </div>
-                        <br/>
-                        <button type="submit">Send Code</button>
-                        <button type="button" onClick={handleLogout}>Logout</button>
-                        <br/><br/>
-                        { showButtonDisplayGoogleAuthenticationForm && <button type="button" onClick={switchFormToGoogleAuthenticationForm}>Use Google Authenticator</button>}
-                    </Form>
-                </Formik>
+                    </main>
+                </div>
             </>
-            }
+            } 
+
             { useGoogleAuthenticationForm && 
             <> 
-                <Formik initialValues={initialValuesGoogleAuthentication} validationSchema={validationSchemaGoogleAuthentication} onSubmit={handleSubmitGoogleAuthentication}>
-                    <Form>
-                        <h1>Multi Factor Authencation Login Code Form - Google Authentication</h1>
-                        <div>
+                <div className={`${style.container}`}>
+                    <header className={`${style.header}`}>
+                        <div className={`${style.logo_container}`}>
+                            <img className={`${style.logo}`} src={logo} alt="Logo" />
+                        </div>
+                        <div className={`${style.nav_links}`}>
                             <img src={user.profilePicture} alt="nothing" width="25" /> &nbsp; {user.username}
+                            <span onClick={handleLogout} className={`${style.link}`}>Logout</span>
                         </div>
-                        <br/>
-                        <div>
-                            <label htmlFor="googleAuthenticationCodeLogin">Enter Google Authentication Code: </label>
-                            <Field type="text" id="googleAuthenticationCodeLogin" name="googleAuthenticationCodeLogin" autoComplete="off" />
-                            <ErrorMessage name="googleAuthenticationCodeLogin" component="div" />
+                    </header>
+                    
+                    
+                    <main className={`${style.main}`}>
+                        <div className={`${style.login_verification_code_form}`}>
+                        <Formik initialValues={initialValuesGoogleAuthentication} validationSchema={validationSchemaGoogleAuthentication} onSubmit={handleSubmitGoogleAuthentication}>
+                            <Form>
+                                <h1 className={`${style.login_verification_code_form_title}`}>Google Authentication Code</h1>
+                                <p className={`${style.login_verification_code_form_subtitle}`}>Please enter your 6-digit code to verify</p>
+
+                                <Field className={`${style.login_verification_code_form_input}`} type="text" id="googleAuthenticationCodeLogin" placeholder='Enter your 6-digit code login' name="googleAuthenticationCodeLogin" autoComplete="off" />
+                                <ErrorMessage name="googleAuthenticationCodeLogin" component="div" className={`${style.login_verification_code_form_input_error}`}/>
+
+                                <button className={`${style.login_verification_code_form_submit}`} type="submit">Submit</button>
+                                { showButtonDisplayGoogleAuthenticationForm && 
+                                <>
+                                    <button onClick={switchSendVerificationCodeForm} className={`${style.button_dark}`} type="button">
+                                       Send Verification Code
+                                    </button>
+                                </>}
+                            </Form>
+                        </Formik>
                         </div>
-                        <br/>
-                        <button type="submit">Send Code</button>
-                        <button type="button" onClick={handleLogout}>Logout</button>
-                        <br/><br/>
-                        <button type="button" onClick={switchSendVerificationCodeForm}>Send Verification Code</button>
-                    </Form>
-                </Formik>
+                    </main>
+                </div>
             </>
             }
         </>

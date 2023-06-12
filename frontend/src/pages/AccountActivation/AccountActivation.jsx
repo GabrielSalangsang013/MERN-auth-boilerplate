@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import style from './AccountActivation.module.css';
+import logo from '../../assets/logo-header.png';
 
 const AccountActivation = () => {
     const navigate = useNavigate();
@@ -32,7 +34,23 @@ const AccountActivation = () => {
     if(!isActivated) {
         return (
             <>
-                <h1>Loading...</h1>
+                <div className={`${style.container}`}>
+                    <header className={`${style.header}`}>
+                        <div className={`${style.logo_container}`}>
+                            <img className={`${style.logo}`} src={logo} alt="Logo" />
+                        </div>
+                        <div className={`${style.nav_links}`}>
+                            
+                        </div>
+                    </header>
+                    
+                    <main className={`${style.main}`}>
+                        <div className={`${style.account_activation}`}>
+                            <h1 className={`${style.account_activation_title}`}>Loading...</h1>
+                            <p className={`${style.account_activation_subtitle}`}>Account activation may take a while. Please wait.</p>
+                        </div>
+                    </main>
+                </div>
             </>
         )
     }

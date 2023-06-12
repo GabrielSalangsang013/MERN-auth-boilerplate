@@ -5,6 +5,8 @@ import { escape } from 'he';
 import * as Yup from 'yup';
 import DOMPurify from 'dompurify';  // FOR SANITIZING USER INPUT TO PREVENT XSS ATTACKS BEFORE SENDING TO THE BACKEND
 import axios from 'axios';
+import style from './Register.module.css';
+import logo from '../../assets/logo-header.png';
 
 const Register = () => {
     const [isUserActivationEmailSent, setIsUserActivationEmailSent] = useState(false);
@@ -112,50 +114,76 @@ const Register = () => {
     if(isUserActivationEmailSent) { 
         return (
             <>
-                <h1>Your account activation link has been sent to your email.</h1>
+                <div className={`${style.container}`}>
+                    <header className={`${style.header}`}>
+                        <div className={`${style.logo_container}`}>
+                            <Link to='/' className={`${style.link}`}>
+                                <img className={`${style.logo}`} src={logo} alt="Logo" />
+                            </Link>
+                        </div>
+                        <div className={`${style.nav_links}`}>
+                            <Link to='/login' className={`${style.link}`}>Login</Link>
+                        </div>
+                    </header>
+                    
+                    
+                    <main className={`${style.main}`}>
+                        <div className={`${style.activation_link_container}`}>
+                            <h1 className={`${style.activation_link_container_title}`}>Activation Link Sent</h1>
+                            <p className={`${style.activation_link_container_subtitle}`}>Your account activation link has been sent to your email</p>
+                            <Link className={`${style.activation_link_login}`} to="/login">Go back to login page</Link>
+                        </div>
+                    </main>
+                </div>
             </>
         )
     }
 
     return (
         <>
-            <Formik initialValues={initialValues} validationSchema={validationSchema} onSubmit={handleSubmit}>
-                <Form>
-                    <h1>Register Form</h1>
-                    <div>
-                        <label htmlFor="username">Username: </label>
-                        <Field type="text" id="username" name="username" />
-                        <ErrorMessage name="username" component="div" />
+            <div className={`${style.container}`}>
+                <header className={`${style.header}`}>
+                    <div className={`${style.logo_container}`}>
+                        <Link to='/' className={`${style.link}`}>
+                            <img className={`${style.logo}`} src={logo} alt="Logo" />
+                        </Link>
                     </div>
+                    <div className={`${style.nav_links}`}>
+                        <Link to='/login' className={`${style.link}`}>Login</Link>
+                    </div>
+                </header>
+                
+                
+                <main className={`${style.main}`}>
+                    <div className={`${style.register_form}`}>
+                    <Formik initialValues={initialValues} validationSchema={validationSchema} onSubmit={handleSubmit}>
+                        <Form>
+                            <h1 className={`${style.register_form_title}`}>Create an account</h1>
+                            <p className={`${style.register_form_subtitle}`}>Complete the form to create your account</p>
 
-                    <div>
-                        <label htmlFor="email">Email: </label>
-                        <Field type="email" id="email" name="email" />
-                        <ErrorMessage name="email" component="div" />
-                    </div>
+                            <Field className={`${style.register_form_input}`} placeholder='Enter your username' type="text" id="username" name="username"/>
+                            <ErrorMessage name="username" component="div" className={`${style.register_form_input_error}`}/>
 
-                    <div>
-                        <label htmlFor="password">Password: </label>
-                        <Field type="password" id="password" name="password" />
-                        <ErrorMessage name="password" component="div" />
-                    </div>
+                            <Field className={`${style.register_form_input}`} placeholder='Enter your email' type="email" id="email" name="email"/>
+                            <ErrorMessage name="email" component="div" className={`${style.register_form_input_error}`}/>    
 
-                    <div>
-                        <label htmlFor="repeatPassword">Repeat Password: </label>
-                        <Field type="password" id="repeatPassword" name="repeatPassword" />
-                        <ErrorMessage name="repeatPassword" component="div" />
-                    </div>
+                            <Field className={`${style.register_form_input}`} placeholder='Enter your password' type="password" id="password" name="password"/>
+                            <ErrorMessage name="password" component="div" className={`${style.register_form_input_error}`}/>    
 
-                    <div>
-                        <label htmlFor="fullName">Full Name: </label>
-                        <Field type="text" id="fullName" name="fullName" />
-                        <ErrorMessage name="fullName" component="div" />
+                            <Field className={`${style.register_form_input}`} placeholder='Please repeat password' type="password" id="repeatPassword" name="repeatPassword"/>
+                            <ErrorMessage name="repeatPassword" component="div" className={`${style.register_form_input_error}`}/>    
+                            
+                            <Field className={`${style.register_form_input}`} placeholder='Enter your full name' type="fullName" id="fullName" name="fullName"/>
+                            <ErrorMessage name="fullName" component="div" className={`${style.register_form_input_error}`}/>
+
+                            <button className={`${style.register_form_submit}`} type="submit">Sign Up</button>
+                        
+                            <Link className={`${style.register_form_link_login}`} to="/login">Already have account?</Link>
+                        </Form>
+                    </Formik>
                     </div>
-                    
-                    <br/>
-                    <button type="submit">Submit</button> | <Link to='/login'>Login</Link>
-                </Form>
-            </Formik>
+                </main>
+            </div>
         </>
     )
 }
