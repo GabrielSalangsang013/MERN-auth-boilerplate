@@ -33,6 +33,28 @@ const userSettings = require('../constants/v1AuthenticationUserSettings'); // //
 // ----------------- CONSTANTS -----------------
 
 const user = tryCatch(async (req, res) => {    
+    userSettings.dataToRemoveRequestUser.forEach(eachDataToRemove => {
+        req.user[eachDataToRemove] = undefined;
+    });
+
+    if(req.user.toObject().hasOwnProperty('googleAuthentication') && !req.user.googleAuthentication.isScanned) {
+        req.user.googleAuthentication.secret = undefined;
+        req.user.googleAuthentication.encoding = undefined;
+        req.user.googleAuthentication.__v = undefined;
+        req.user.googleAuthentication.user_id = undefined;
+        req.user.googleAuthentication.otpauth_url = undefined;
+        req.user.googleAuthentication.isScanned = undefined;
+    }
+
+    if(req.user.toObject().hasOwnProperty('googleAuthentication') && req.user.googleAuthentication.isScanned) {
+        req.user.googleAuthentication.qr_code = undefined;
+        req.user.googleAuthentication.secret = undefined;
+        req.user.googleAuthentication.encoding = undefined;
+        req.user.googleAuthentication.__v = undefined;
+        req.user.googleAuthentication.user_id = undefined;
+        req.user.googleAuthentication.otpauth_url = undefined;
+    }
+
     return res.status(200).json({status: 'ok', user: req.user});
 });
 

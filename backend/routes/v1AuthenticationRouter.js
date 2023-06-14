@@ -160,28 +160,6 @@ function verifyPrivateCSRFToken(req, res, next) {
         
         return res.status(403).json({message: 'You are forbidden. Invalid CSRF token.', errorCode: errorCodes.INVALID_CSRF_TOKEN_VERIFY_PRIVATE_CSRF_TOKEN});
     }
-
-    userSettings.dataToRemoveRequestUser.forEach(eachDataToRemove => {
-        req.user[eachDataToRemove] = undefined;
-    });
-
-    if(req.user.toObject().hasOwnProperty('googleAuthentication') && !req.user.googleAuthentication.isScanned) {
-        req.user.googleAuthentication.secret = undefined;
-        req.user.googleAuthentication.encoding = undefined;
-        req.user.googleAuthentication.__v = undefined;
-        req.user.googleAuthentication.user_id = undefined;
-        req.user.googleAuthentication.otpauth_url = undefined;
-        req.user.googleAuthentication.isScanned = undefined;
-    }
-
-    if(req.user.toObject().hasOwnProperty('googleAuthentication') && req.user.googleAuthentication.isScanned) {
-        req.user.googleAuthentication.qr_code = undefined;
-        req.user.googleAuthentication.secret = undefined;
-        req.user.googleAuthentication.encoding = undefined;
-        req.user.googleAuthentication.__v = undefined;
-        req.user.googleAuthentication.user_id = undefined;
-        req.user.googleAuthentication.otpauth_url = undefined;
-    }
     
     next();
 }
